@@ -1572,228 +1572,149 @@ with tab_analysis:
 
     st.markdown('</div>', unsafe_allow_html=True)
     
-# ---------------- Tab 5 - Policy Intelligence Report ----------------
-with tab_ai:
+# ---------------- Tab 5 - Policy Intelligence ----------------
+with tab_policy:
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Policy Intelligence Report</div>', unsafe_allow_html=True)
 
-    df = _choose_reporting_df()
+    # ---------- SAFE DATA FETCH ----------
+    df = st.session_state.get("active_df")
 
-    if not isinstance(df, pd.DataFrame) or df.empty:
-        st.info("Prepare dataset first.")
+    if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+        df = st.session_state.get("cleaned_preview")
+
+    if df is None or df.empty:
+        st.error("❌ No dataset available. Please complete Data Preparation & Clean steps.")
         st.stop()
 
-    st.write(f"Dataset: {df.shape[0]} rows × {df.shape[1]} columns")
+    st.success(f"Dataset Loaded: {df.shape[0]} rows × {df.shape[1]} columns")
 
+    # ---------- VARIABLES ----------
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
+    if len(numeric_cols) < 2:
+        st.warning("At least 2 numeric columns required.")
+        st.stop()
+
     selected_vars = st.multiselect(
-        "Select indicators",
+        "Select Key Indicators",
         numeric_cols,
         default=numeric_cols[:3],
-        key="report_vars_final"
+        key="policy_vars"
     )
 
     if len(selected_vars) < 2:
-        st.warning("Select at least 2 variables.")
+        st.warning("Select minimum 2 indicators.")
         st.stop()
 
-    # ---------------- SAFE NUMERIC CHECK ----------------
-    def valid(x):
-        return x is not None and pd.notna(x)
-
-    with st.spinner("Running analysis..."):
+    # ---------- ANALYSIS ----------
+    with st.spinner("Running system diagnostics..."):
         stats = compute_basic_stats(df)
         adv = run_advanced_analyses(df, selected_vars, 3, 3)
 
-    # =========================
-    # EXECUTIVE SUMMARY
-    # =========================
+    # ---------- EXEC SUMMARY ----------
     st.subheader("Executive Summary")
 
     means = {k: v["mean"] for k, v in stats["numeric_stats"].items() if v["mean"] is not None}
 
     if means:
-        top_var = max(means, key=means.get)
-        low_var = min(means, key=means.get)
+        top = max(means, key=means.get)
+        low = min(means, key=means.get)
 
-        st.write(
-            f"The system exhibits structural performance asymmetry. "
-            f"{top_var} records the highest system-wide average ({means[top_var]:.1f}), "
-            f"while {low_var} remains comparatively weak ({means[low_var]:.2f}). "
-            "This indicates uneven distribution of educational capacity and resource efficiency."
+        st.info(
+            f"System imbalance detected. {top} performs strongest ({means[top]:.1f}), "
+            f"while {low} lags ({means[low]:.1f}). Indicates structural inequality."
         )
 
-    # =========================
-    # KPI METRICS
-    # =========================
-    st.subheader("Key System Indicators")
+    # ---------- KPI ----------
+    st.subheader("Key Indicators")
 
     cols = st.columns(len(selected_vars))
     for i, var in enumerate(selected_vars):
         val = stats["numeric_stats"][var]["mean"]
-        cols[i].metric(var, round(val, 2) if val is not None else "NA")
+        cols[i].metric(var, round(val, 2) if val else "NA")
 
-    # =========================
-    # DISTRIBUTION
-    # =========================
-    st.subheader("System Distribution")
-
-    fig = px.box(df, y=selected_vars, points="all")
+    # ---------- DISTRIBUTION ----------
+    st.subheader("Distribution Analysis")
+    fig = px.box(df, y=selected_vars)
     st.plotly_chart(fig, use_container_width=True)
 
-    # =========================
-    # PCA
-    # =========================
+    # ---------- PCA ----------
     if adv and adv.get("pca"):
-        st.subheader("Structural Analysis (PCA)")
+        st.subheader("Structural Drivers (PCA)")
 
         exp = adv["pca"]["explained_variance_ratio"]
 
-        fig_pca = px.bar(
-            x=[f"PC{i+1}" for i in range(len(exp))],
-            y=exp,
-            labels={"x": "Components", "y": "Explained Variance"}
-        )
+        fig_pca = px.bar(x=[f"PC{i+1}" for i in range(len(exp))], y=exp)
         st.plotly_chart(fig_pca, use_container_width=True)
 
-        st.info(
-            f"A dominant structural factor explains {round(exp[0]*100,1)}% of system variation. "
-            "This confirms that district performance is driven by underlying systemic conditions."
-        )
+        st.info(f"Core factor explains {round(exp[0]*100,1)}% system variance.")
 
-    # =========================
-    # CLUSTER ANALYSIS
-    # =========================
+    # ---------- CLUSTERS ----------
     if adv and adv.get("kmeans"):
+
         st.subheader("District Segmentation")
 
         cluster_sizes = adv["kmeans"]["cluster_sizes"]
         medians = adv["kmeans"]["cluster_medians"]
-        result_df = pd.DataFrame(adv["cluster_assignments"])
+
+        result_df = pd.DataFrame(adv.get("cluster_assignments", {}))
 
         id_col = next((c for c in df.columns if "district" in c.lower()), None)
 
-        # cluster size chart
-        fig_cluster = px.bar(
-            x=list(cluster_sizes.keys()),
-            y=list(cluster_sizes.values()),
-            labels={"x": "Cluster", "y": "Number of Districts"}
-        )
+        fig_cluster = px.bar(x=list(cluster_sizes.keys()), y=list(cluster_sizes.values()))
         st.plotly_chart(fig_cluster, use_container_width=True)
 
-        st.write("Cluster Profiles (Median Values)")
         st.dataframe(pd.DataFrame(medians).round(2))
 
-        # =========================
-        # DEEP CLUSTER INTELLIGENCE
-        # =========================
-        st.subheader("Cluster Intelligence & Policy Actions")
+        # ---------- INTELLIGENCE ----------
+        st.subheader("Cluster Intelligence")
 
-        for cl in cluster_sizes:
-            cluster_rows = result_df[result_df["_cluster"] == cl]
+        for cl, size in cluster_sizes.items():
+
+            cluster_rows = result_df[result_df["_cluster"] == cl] if "_cluster" in result_df else pd.DataFrame()
 
             districts = (
                 cluster_rows[id_col].astype(str).tolist()
-                if id_col in cluster_rows.columns
-                else cluster_rows.index.astype(str).tolist()
+                if id_col and id_col in cluster_rows.columns
+                else []
             )
 
             evs = medians.get("EVS", {}).get(cl)
             ptr = medians.get("ptr", {}).get(cl)
             infra = medians.get("infra", {}).get(cl)
 
-            st.markdown(f"### Cluster {cl} | {len(districts)} Districts")
+            st.markdown(f"### Cluster {cl} ({size} districts)")
 
-            st.write(f"Coverage: {', '.join(districts)}")
+            if districts:
+                st.write(f"Districts: {', '.join(districts)}")
 
-            st.write(
-                f"System Profile → EVS: {round(evs,2) if valid(evs) else 'NA'}, "
-                f"PTR: {round(ptr,2) if valid(ptr) else 'NA'}, "
-                f"Infra: {round(infra,2) if valid(infra) else 'NA'}"
-            )
+            st.write(f"EVS: {evs}, PTR: {ptr}, Infra: {infra}")
 
-            # -------- POLICY INTELLIGENCE --------
-            if valid(evs) and valid(ptr) and evs < 50 and ptr > 35:
-                st.error("Critical Learning Deficit Cluster")
+            # ---------- SAFE LOGIC ----------
+            if evs is not None and ptr is not None and evs < 50 and ptr > 35:
+                st.error("Critical Learning Deficit → Immediate teacher redistribution required")
 
-                st.write(
-                    "Learning outcomes are severely constrained by excessive teacher load. "
-                    "High PTR is directly suppressing instructional effectiveness."
-                )
+            elif infra is not None and infra < 0.5:
+                st.warning("Infrastructure deficit → Target capital investment")
 
-                st.write(
-                    "Action Plan:\n"
-                    "- Immediate teacher redistribution to reduce PTR below 30\n"
-                    "- Deploy assistant teachers or digital teaching aids\n"
-                    "- Prioritize classroom-level instructional interventions"
-                )
-
-            elif valid(infra) and infra < 0.5:
-                st.warning("Infrastructure-Constrained Cluster")
-
-                st.write(
-                    "Physical learning environment is limiting academic outcomes."
-                )
-
-                st.write(
-                    "Action Plan:\n"
-                    "- Target capital investment in school facilities\n"
-                    "- Improve classrooms, sanitation, and equipment\n"
-                    "- Link infrastructure upgrades with learning programs"
-                )
-
-            elif valid(evs) and evs > 80:
-                st.success("High-Performance Benchmark Cluster")
-
-                st.write(
-                    "Districts demonstrate strong systemic efficiency and balanced resource utilization."
-                )
-
-                st.write(
-                    "Action Plan:\n"
-                    "- Preserve current policy configuration\n"
-                    "- Document and replicate governance practices\n"
-                    "- Use as benchmark districts for scaling best practices"
-                )
+            elif evs is not None and evs > 80:
+                st.success("High-performing cluster → Use as benchmark")
 
             else:
-                st.info("Moderate Performance Cluster")
+                st.info("Moderate cluster → Balanced interventions needed")
 
-                st.write(
-                    "Performance indicates mixed constraints requiring balanced intervention."
-                )
+    # ---------- POLICY ----------
+    st.subheader("Strategic Policy Actions")
 
-                st.write(
-                    "Action Plan:\n"
-                    "- Moderate teacher support programs\n"
-                    "- Targeted infrastructure upgrades\n"
-                    "- Strengthen monitoring and governance"
-                )
-
-    # =========================
-    # SYSTEM POLICY
-    # =========================
-    st.subheader("System-Level Strategic Actions")
-
-    st.write(
-        "- Prioritize teacher redistribution in high PTR clusters\n"
-        "- Focus infrastructure spending only where deficits exist\n"
-        "- Transition to cluster-based governance models\n"
-        "- Implement continuous real-time monitoring systems\n"
-        "- Strengthen institutional capacity at district level"
-    )
-
-    # =========================
-    # ROADMAP
-    # =========================
-    st.subheader("Implementation Roadmap")
-
-    st.write(
-        "Short Term → Identify critical districts and deploy rapid interventions\n"
-        "Medium Term → Align infrastructure and staffing strategies\n"
-        "Long Term → Build adaptive, resilient education systems"
-    )
+    st.write("""
+    - Optimize teacher allocation across districts  
+    - Target infrastructure investments selectively  
+    - Implement cluster-based governance  
+    - Enable real-time performance monitoring  
+    - Strengthen institutional capacity  
+    """)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
