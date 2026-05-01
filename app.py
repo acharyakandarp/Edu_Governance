@@ -958,14 +958,15 @@ with header_col3:
 st.markdown("---")
 
 
-# ===== WORKFLOW NAVIGATION (TABS) =====
-tabs = st.tabs([
+# ===== WORKFLOW NAVIGATION (PROFESSIONAL TABS) =====
+
+tab_data, tab_prep, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
     "📊 Data Ingestion",
     "🧠 Data Preparation",
     "📈 Statistical Analysis",
     "🏛️ Policy Intelligence",
     "🤖 AI Synthesis",
-    "⚙️ System & Debug"
+    "⚙️ System Debug"
 ])
 
 
