@@ -1353,117 +1353,163 @@ with tabs[4]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Policy Intelligence Report</div>', unsafe_allow_html=True)
 
-    df_for_report = _choose_reporting_df()
+    df = _choose_reporting_df()
 
-    if not isinstance(df_for_report, pd.DataFrame) or df_for_report.empty:
+    if not isinstance(df, pd.DataFrame) or df.empty:
         st.info("Prepare dataset first.")
         st.stop()
 
-    st.write(f"Dataset: {df_for_report.shape[0]} rows × {df_for_report.shape[1]} columns")
+    st.write(f"Dataset: {df.shape[0]} rows × {df.shape[1]} columns")
 
-    numeric_cols = df_for_report.select_dtypes(include=[np.number]).columns.tolist()
-
-    if len(numeric_cols) < 2:
-        st.warning("Need at least 2 numeric variables.")
-        st.stop()
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     selected_vars = st.multiselect(
         "Select indicators",
         numeric_cols,
         default=numeric_cols[:3],
-        key="tab5_select_vars"
+        key="report_vars"
     )
 
     if len(selected_vars) < 2:
         st.warning("Select at least 2 variables.")
         st.stop()
 
-    with st.spinner("Running advanced analysis..."):
-        stats = compute_basic_stats(df_for_report)
-        adv = run_advanced_analyses(df_for_report, selected_vars, 3, 3)
+    with st.spinner("Running analysis..."):
+        stats = compute_basic_stats(df)
+        adv = run_advanced_analyses(df, selected_vars, 3, 3)
 
-    # ----------- HIGH-QUALITY POLICY REPORT GENERATOR -----------
-    def generate_policy_report(stats, adv):
-        report = []
+    # =========================
+    # SECTION 1 — EXEC SUMMARY
+    # =========================
+    st.subheader("Executive Summary")
 
-        report.append("# National Education System Intelligence Report\n")
+    means = {k: v["mean"] for k, v in stats["numeric_stats"].items() if v["mean"] is not None}
+    top_var = max(means, key=means.get)
+    low_var = min(means, key=means.get)
 
-        # Executive Summary
-        report.append("## 1. Executive Summary\n")
-        report.append(
-            "This analysis reveals structurally embedded disparities across districts. "
-            "Performance variation is not random but driven by systemic capacity factors such as infrastructure, teacher distribution, and governance efficiency."
-        )
-
-        # System Diagnosis
-        report.append("\n## 2. System Diagnosis\n")
-        report.append(
-            "Strong inter-variable correlations indicate that educational outcomes move together. "
-            "This suggests a unified system constraint rather than isolated subject-level weaknesses."
-        )
-
-        # PCA Insight
-        if adv and adv.get("pca"):
-            var = adv["pca"]["explained_variance_ratio"][0]
-            report.append("\n## 3. Structural Insight (PCA)\n")
-            report.append(
-                f"A dominant latent factor explains {round(var*100,1)}% of total variance, confirming that district performance is governed by a core systemic dimension."
-            )
-
-        # Cluster Analysis
-        if adv and adv.get("kmeans"):
-            report.append("\n## 4. District Segmentation\n")
-            for cl, size in adv["kmeans"]["cluster_sizes"].items():
-                report.append(f"\n### Cluster {cl} — {size} districts")
-                report.append(
-                    "This cluster represents a distinct structural profile requiring targeted policy design rather than generic interventions."
-                )
-
-        # Deep Recommendations
-        report.append("\n## 5. Strategic Policy Actions\n")
-        report.append("""
-### 5.1 Infrastructure Equalization
-Target districts with low infrastructure scores to unlock immediate learning gains.
-
-### 5.2 Teacher Allocation Reform
-Optimize PTR by redistributing teachers dynamically across districts.
-
-### 5.3 Cluster-Based Governance Model
-Move away from uniform policy. Implement cluster-specific strategies.
-
-### 5.4 Data-Driven Monitoring
-Establish real-time dashboards for continuous performance tracking.
-
-### 5.5 Systemic Capacity Building
-Invest in leadership, training, and institutional strengthening.
-""")
-
-        # Roadmap
-        report.append("\n## 6. Implementation Roadmap\n")
-        report.append("""
-- **Short Term:** Identify critical districts and deploy rapid interventions  
-- **Medium Term:** Strengthen infrastructure and staffing systems  
-- **Long Term:** Build resilient, adaptive education governance frameworks  
-""")
-
-        report.append("\n---\n*End of Policy Intelligence Report*")
-
-        return "\n".join(report)
-
-    report_text = generate_policy_report(stats, adv)
-
-    st.subheader("Generated Policy Report")
-    st.text_area("Report Output", report_text, height=550)
-
-    st.download_button(
-        "Download Report",
-        report_text,
-        "policy_report.txt",
-        key="tab5_download"
+    st.write(
+        f"The system shows a strong performance gradient. "
+        f"{top_var} is the strongest indicator ({means[top_var]:.1f}), while "
+        f"{low_var} is the weakest ({means[low_var]:.2f}). "
+        "This reflects uneven distribution of educational capacity across districts."
     )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    # =========================
+    # SECTION 2 — KEY METRICS
+    # =========================
+    st.subheader("Key Indicators")
 
+    cols = st.columns(len(selected_vars))
+    for i, var in enumerate(selected_vars):
+        cols[i].metric(
+            label=var,
+            value=round(stats["numeric_stats"][var]["mean"], 2)
+        )
+
+    # =========================
+    # SECTION 3 — DISTRIBUTION
+    # =========================
+    st.subheader("Indicator Distribution")
+
+    fig = px.box(df, y=selected_vars, points="all")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # =========================
+    # SECTION 4 — PCA INSIGHT
+    # =========================
+    if adv and adv.get("pca"):
+        st.subheader("Structural Insight (PCA)")
+
+        exp_var = adv["pca"]["explained_variance_ratio"]
+        fig_pca = px.bar(
+            x=[f"PC{i+1}" for i in range(len(exp_var))],
+            y=exp_var,
+            labels={"x": "Component", "y": "Explained Variance"}
+        )
+        st.plotly_chart(fig_pca, use_container_width=True)
+
+        st.write(
+            f"The first component explains {round(exp_var[0]*100,1)}% of total variance, "
+            "indicating a strong underlying systemic factor."
+        )
+
+    # =========================
+    # SECTION 5 — CLUSTERS
+    # =========================
+    if adv and adv.get("kmeans"):
+        st.subheader("District Segmentation")
+
+        cluster_sizes = adv["kmeans"]["cluster_sizes"]
+        medians = adv["kmeans"]["cluster_medians"]
+
+        # Cluster size chart
+        fig_cluster = px.bar(
+            x=list(cluster_sizes.keys()),
+            y=list(cluster_sizes.values()),
+            labels={"x": "Cluster", "y": "Number of Districts"}
+        )
+        st.plotly_chart(fig_cluster, use_container_width=True)
+
+        # Cluster table
+        st.write("Cluster Profiles (Median Values)")
+        st.dataframe(pd.DataFrame(medians).round(2))
+
+        # Cluster insights
+        st.subheader("Cluster Insights")
+
+        for cl in cluster_sizes:
+            evs = medians.get("EVS", {}).get(cl)
+            ptr = medians.get("ptr", {}).get(cl)
+
+            if evs and ptr:
+                if evs < 50 and ptr > 35:
+                    st.write(
+                        f"Cluster {cl}: Low performance (EVS={evs}) is strongly associated with high PTR ({ptr}). "
+                        "Teacher load is likely the primary constraint."
+                    )
+                elif evs > 80:
+                    st.write(
+                        f"Cluster {cl}: High-performing group (EVS={evs}) with relatively balanced resources."
+                    )
+                else:
+                    st.write(
+                        f"Cluster {cl}: Moderate performance with mixed constraints."
+                    )
+
+    # =========================
+    # SECTION 6 — RECOMMENDATIONS
+    # =========================
+    st.subheader("Policy Recommendations")
+
+    st.markdown("""
+**1. Teacher Redistribution**
+Focus on clusters with high PTR to reduce classroom burden.
+
+**2. Targeted Infrastructure**
+Invest only in districts with low infrastructure scores.
+
+**3. Cluster-Based Policy Design**
+Avoid one-size-fits-all approaches.
+
+**4. Real-Time Monitoring**
+Implement dashboards for continuous tracking.
+
+**5. Institutional Strengthening**
+Improve governance capacity at district level.
+""")
+
+    # =========================
+    # SECTION 7 — ROADMAP
+    # =========================
+    st.subheader("Implementation Roadmap")
+
+    st.markdown("""
+- **Short Term:** Identify critical districts  
+- **Medium Term:** Deploy targeted interventions  
+- **Long Term:** Strengthen system capacity  
+""")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Tab 6 - AI Policy Synthesis ----------------
 with tabs[5]:
