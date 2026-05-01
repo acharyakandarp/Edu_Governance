@@ -999,186 +999,207 @@ st.sidebar.caption(
     "This platform performs PCA, clustering, and policy intelligence generation "
     "for district-level education governance."
 )
-# ---------------- Tab 1 - Data ----------------
+# ================================
+# TAB 1 — DATA INGESTION
+# ================================
 with tabs[0]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Data input</div>', unsafe_allow_html=True)
-    st.write("Load a sample dataset, upload your CSV/XLSX file, or create a manual grid. The app expects one row per district.")
+
+    st.markdown('<div class="section-title">Data Ingestion</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-desc">Load district-level dataset for analysis. Ensure one row per district with performance indicators.</div>',
+        unsafe_allow_html=True
+    )
+
+    # KPI Row
+    k1, k2, k3 = st.columns(3)
+    df_state = st.session_state.get("original_df", pd.DataFrame())
+
+    k1.metric("Rows", df_state.shape[0] if isinstance(df_state, pd.DataFrame) else 0)
+    k2.metric("Columns", df_state.shape[1] if isinstance(df_state, pd.DataFrame) else 0)
+    k3.metric("Status", "Loaded" if isinstance(df_state, pd.DataFrame) and not df_state.empty else "Not Loaded")
+
+    st.markdown("---")
+
+    # Input Mode
     input_col1, input_col2 = st.columns([2,1])
+
     with input_col1:
-        input_mode = st.selectbox("Input mode", ["Use sample", "Upload file", "Manual grid"])
+        input_mode = st.selectbox(
+            "Select Data Source",
+            ["Sample Dataset", "Upload File", "Manual Entry"],
+            key="data_input_mode"
+        )
+
     with input_col2:
-        st.markdown('<div class="muted">Tip: Use the sample to try features quickly.</div>', unsafe_allow_html=True)
+        st.info("Use sample data to explore system quickly.")
 
-    uploaded = None
-    original_df: Optional[pd.DataFrame] = None
+    original_df = None
 
-    if input_mode == "Use sample":
+    # ---- SAMPLE ----
+    if input_mode == "Sample Dataset":
         original_df = load_sample()
-        st.success("Loaded sample dataset (10 districts).")
-    elif input_mode == "Upload file":
-        uploaded = st.file_uploader("Upload CSV or XLSX", type=["csv", "xlsx"])
+        st.success(f"Sample dataset loaded ({original_df.shape[0]} districts).")
+
+    # ---- UPLOAD ----
+    elif input_mode == "Upload File":
+        uploaded = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+
         if uploaded:
             try:
-                if str(uploaded.name).lower().endswith(".csv"):
+                if uploaded.name.endswith(".csv"):
                     original_df = pd.read_csv(uploaded)
                 else:
                     original_df = pd.read_excel(uploaded)
-                st.success(f"Loaded `{uploaded.name}` ({original_df.shape[0]} rows × {original_df.shape[1]} cols).")
-            except Exception as e:
-                st.error(f"Error reading file: {pretty_exception(e)}")
-                original_df = None
-        else:
-            st.info("Please upload a file to proceed.")
-    else:
-        template_cols = st.text_input("Comma-separated column names", value="state,district,EVS,Language,Math")
-        cols = [c.strip() for c in template_cols.split(",") if c.strip()]
-        rows = st.number_input("Initial empty rows", min_value=1, max_value=200, value=5)
-        original_df = pd.DataFrame(columns=cols)
-        if st.button("Fill empty rows"):
-            original_df = pd.concat([original_df, pd.DataFrame([dict(zip(cols, [""]*len(cols))) for _ in range(rows)])], ignore_index=True)
-            st.success("Manual grid initialized.")
 
-    # store the freshly loaded original_df in session for downstream tabs if not None
+                st.success(f"Loaded {original_df.shape[0]} rows × {original_df.shape[1]} columns")
+
+            except Exception as e:
+                st.error("File read failed: " + pretty_exception(e))
+
+    # ---- MANUAL ----
+    else:
+        template_cols = st.text_input(
+            "Define Columns",
+            value="state,district,EVS,Language,Math"
+        )
+
+        cols = [c.strip() for c in template_cols.split(",") if c.strip()]
+        rows = st.number_input("Rows to generate", min_value=1, max_value=200, value=10)
+
+        if st.button("Create Grid"):
+            original_df = pd.DataFrame([[""] * len(cols) for _ in range(rows)], columns=cols)
+            st.success("Manual dataset created")
+
+    # Save to session
     if isinstance(original_df, pd.DataFrame) and not original_df.empty:
         st.session_state["original_df"] = original_df.copy()
-    else:
-        # ensure key exists but possibly empty
-        st.session_state["original_df"] = original_df if original_df is not None else pd.DataFrame()
 
-    st.markdown("#### Preview")
+    st.markdown("### Dataset Preview")
+
     if isinstance(st.session_state.get("original_df"), pd.DataFrame) and not st.session_state["original_df"].empty:
-        st.dataframe(st.session_state["original_df"].head(10), use_container_width=True)
+        st.dataframe(st.session_state["original_df"].head(20), use_container_width=True)
     else:
-        st.info("No dataset loaded yet. Use sample, upload, or manual grid.")
+        st.warning("No dataset available yet.")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Tab 2 - Extraction ----------------
+
+
+# ================================
+# TAB 2 — DATA PREPARATION (EXTRACTION)
+# ================================
 with tabs[1]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Extraction (schema suggestion)</div>', unsafe_allow_html=True)
 
-    st.write(
-        "Automatic schema suggestions help map raw columns to expected roles "
-        "(EVS, Language, Math, infra, ptr, district). "
-        "Use mock extractor locally or Gemini (optional)."
+    st.markdown('<div class="section-title">Data Preparation & Schema Mapping</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-desc">Identify column roles and prepare dataset for analysis. System can auto-detect schema or use AI assistance.</div>',
+        unsafe_allow_html=True
     )
 
-    c1, c2 = st.columns([1, 1])
+    df_input = st.session_state.get("original_df", pd.DataFrame())
+
+    if df_input.empty:
+        st.warning("Load dataset in Data Ingestion step.")
+        st.stop()
+
+    # KPI Row
+    k1, k2 = st.columns(2)
+    k1.metric("Columns Detected", df_input.shape[1])
+    k2.metric("Rows Available", df_input.shape[0])
+
+    st.markdown("---")
+
+    c1, c2 = st.columns(2)
 
     # ---------------- MOCK EXTRACTION ----------------
     with c1:
-        if st.button("Auto-extract (mock)"):
-            preview = st.session_state.get("original_df", pd.DataFrame()).head(50).copy()
+        st.markdown("### Local Schema Detection")
 
-            if preview.empty:
-                st.error("No data available. Load dataset in Tab 1.")
-            else:
-                suggestions, cleaned_preview = mock_gemini_extract_preview(preview)
+        if st.button("Run Automatic Mapping"):
+            preview = df_input.head(50).copy()
 
-                st.session_state["suggestions"] = suggestions
-                st.session_state["cleaned_preview"] = cleaned_preview
+            suggestions, cleaned_preview = mock_gemini_extract_preview(preview)
 
-                st.success("Mock extraction complete.")
+            st.session_state["suggestions"] = suggestions
+            st.session_state["cleaned_preview"] = cleaned_preview
 
-    # ---------------- GEMINI EXTRACTION ----------------
+            st.success("Schema detected successfully")
+
+    # ---------------- GEMINI ----------------
     with c2:
-        st.write("Real Gemini extraction (optional)")
+        st.markdown("### AI-Assisted Mapping")
 
-        consent = st.checkbox(
-            "I consent to send sanitized sample (no PII) to Gemini",
-            value=False
-        )
+        consent = st.checkbox("Allow external API usage (no PII sent)", value=False)
 
         gem_model = st.selectbox(
-            "Gemini model",
-            ["models/gemini-2.5-flash", "models/gemini-2.5-pro"]
+            "Model",
+            ["models/gemini-2.5-flash", "models/gemini-2.5-pro"],
+            key="gem_model_select"
         )
 
-        if st.button("Auto-extract with Gemini"):
+        if st.button("Run AI Mapping"):
 
             if not consent:
-                st.error("Consent required.")
+                st.error("Consent required")
             else:
-                preview = st.session_state.get("original_df", pd.DataFrame()).head(50).copy()
+                sanitized = sanitize_sample(df_input.head(50))
 
-                if preview.empty:
-                    st.error("No data available.")
-                else:
-                    sanitized = sanitize_sample(preview, max_rows=20)
-
+                try:
                     try:
-                        # SAFE GEMINI CALL (no undefined function)
-                        try:
-                            import os
-                            import google.generativeai as genai
+                        import os, google.generativeai as genai
 
-                            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+                        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+                        if not api_key:
+                            raise ValueError("Missing API key")
 
-                            if not api_key:
-                                raise ValueError("Missing API key")
+                        genai.configure(api_key=api_key)
 
-                            genai.configure(api_key=api_key)
+                        model = genai.GenerativeModel(gem_model)
 
-                            model = genai.GenerativeModel(gem_model)
+                        prompt = f"""
+                        Identify column roles.
 
-                            prompt = f"""
-                            Extract column roles from dataset.
+                        Dataset:
+                        {sanitized.to_csv(index=False)}
 
-                            CSV:
-                            {sanitized.to_csv(index=False)}
+                        Return structured JSON mapping.
+                        """
 
-                            Return JSON:
-                            {{
-                              "suggestions": [
-                                {{
-                                  "original": "",
-                                  "suggested_role": "",
-                                  "dtype": "",
-                                  "confidence": 0.0
-                                }}
-                              ]
-                            }}
-                            """
+                        resp = model.generate_content(prompt)
+                        text = getattr(resp, "text", "")
 
-                            resp = model.generate_content(prompt)
+                        import json, re
+                        match = re.search(r"\{{.*\}}", text, re.S)
 
-                            import json, re
-                            text = getattr(resp, "text", "")
-
-                            match = re.search(r"\{.*\}", text, re.S)
-                            if not match:
-                                raise ValueError("Invalid Gemini response")
-
+                        if match:
                             parsed = json.loads(match.group(0))
-
                             suggestions = parsed.get("suggestions", [])
+                        else:
+                            raise ValueError("Invalid response")
 
-                            cleaned_preview = _build_local_cleaned_preview_from_suggestions(
-                                sanitized,
-                                suggestions
-                            )
+                        cleaned_preview = _build_local_cleaned_preview_from_suggestions(
+                            sanitized,
+                            suggestions
+                        )
 
-                        except Exception:
-                            # FALLBACK ALWAYS WORKS
-                            suggestions, cleaned_preview = mock_gemini_extract_preview(sanitized)
+                    except Exception:
+                        suggestions, cleaned_preview = mock_gemini_extract_preview(sanitized)
 
-                        if not isinstance(cleaned_preview, pd.DataFrame):
-                            cleaned_preview = pd.DataFrame(cleaned_preview)
+                    st.session_state["suggestions"] = suggestions
+                    st.session_state["cleaned_preview"] = cleaned_preview
 
-                        st.session_state["suggestions"] = suggestions
-                        st.session_state["cleaned_preview"] = cleaned_preview
+                    st.success("AI extraction complete")
 
-                        st.success("Extraction complete.")
-
-                    except Exception as e:
-                        st.error("Extraction failed: " + pretty_exception(e))
+                except Exception as e:
+                    st.error("Extraction failed: " + pretty_exception(e))
 
     # ---------------- DISPLAY ----------------
     st.markdown("---")
 
     if "suggestions" in st.session_state:
-        st.markdown("**Detected suggestions**")
+        st.markdown("### Detected Schema")
 
         try:
             st.dataframe(
@@ -1188,13 +1209,13 @@ with tabs[1]:
         except Exception:
             st.write(st.session_state["suggestions"])
 
-        st.markdown("Go to **Clean & Edit** tab to apply mappings.")
+        st.success("Proceed to Data Cleaning step")
 
     else:
-        st.info("Run extraction to see results.")
+        st.info("Run schema detection to continue")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
+    
 # ---------------- Tab 3 - Clean & Edit ----------------
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
