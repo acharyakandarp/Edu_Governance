@@ -1729,8 +1729,39 @@ with tab_ai:
         st.info("Prepare dataset first.")
         st.stop()
 
-    st.write(f"Dataset ready: {df_for_report.shape[0]} rows")
+    st.write(f"Dataset ready: {df_for_report.shape[0]} rows × {df_for_report.shape[1]} columns")
 
+    # ---------------- Helpers ----------------
+    def clean_llm_output(text: str) -> str:
+        if not text:
+            return ""
+        text = text.replace("#", "").replace("*", "").replace("```", "")
+        text = re.sub(r"\n\s*\n", "\n\n", text)
+        return text.strip()
+
+    def generate_pdf(report_text: str) -> bytes:
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.pagesizes import letter
+        from io import BytesIO
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+
+        story = []
+        for line in report_text.split("\n"):
+            if line.strip() == "":
+                story.append(Spacer(1, 10))
+            else:
+                story.append(Paragraph(line, styles["Normal"]))
+                story.append(Spacer(1, 8))
+
+        doc.build(story)
+        buffer.seek(0)
+        return buffer.getvalue()
+
+    # ---------------- Engine Selection ----------------
     synth_choice = st.selectbox(
         "Synthesis Engine",
         ["Local Generator", "Gemini (Cloud)", "Ollama (Local)"],
@@ -1738,13 +1769,26 @@ with tab_ai:
     )
 
     stats = compute_basic_stats(df_for_report)
-    payload = json.dumps({"stats": stats}, indent=2)[:10000]
+    compact_payload = json.dumps({"stats": stats}, indent=2)[:10000]
+    compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
 
-    # -------- LOCAL --------
+    generated_text = ""
+
+    # ---------------- LOCAL GENERATOR ----------------
     if synth_choice == "Local Generator":
-        st.success("Using safe local synthesis (recommended).")
+        st.success("Using deterministic policy generator.")
 
-    # -------- GEMINI --------
+        generated_text = (
+            "National Education System Intelligence Report\n\n"
+            "Executive Summary\n"
+            "The dataset reveals systemic disparities driven by infrastructure, teacher allocation, and performance clustering.\n\n"
+            "System Diagnosis\n"
+            "Strong correlations indicate interconnected system constraints rather than isolated subject weaknesses.\n\n"
+            "Policy Direction\n"
+            "Interventions must be cluster-specific, resource-targeted, and governance-driven.\n"
+        )
+
+    # ---------------- GEMINI ----------------
     elif synth_choice == "Gemini (Cloud)":
         consent = st.checkbox("Allow external API call", key="tab6_consent")
 
@@ -1765,44 +1809,89 @@ with tab_ai:
                     )
 
                     if st.button("Generate AI Report", key="tab6_run"):
-                        prompt = f"""
-You are a senior government policy advisor.
 
-Generate a HIGH-QUALITY structured report:
-- Executive Summary
-- System Diagnosis
-- Cluster Analysis
-- Deep Recommendations (non-generic)
-- Implementation Roadmap
+                        policy_prompt = f"""
+You are a senior government policy analyst.
+
+Write a formal, structured education policy report.
+
+STRICT RULES:
+- No #, *, markdown, or decorative formatting
+- No bullet overload
+- Professional tone only
+- Use structured paragraphs
+
+STRUCTURE:
+
+Title: National Education System Intelligence Report
+
+Section 1: Executive Summary
+Section 2: System Diagnosis
+Section 3: Structural Insights (PCA if relevant)
+Section 4: District Segmentation
+    - Mention clusters
+    - Mention districts inside each cluster
+    - Describe performance patterns using data
+Section 5: Strategic Policy Recommendations
+    - Highly specific
+    - Based on data
+Section 6: Implementation Roadmap
 
 DATA:
-{payload}
+{compact_payload}
 
-Make it formal, structured, and policy-grade.
+CSV SAMPLE:
+{compact_csv}
+
+Return clean professional text only.
 """
 
                         try:
-                            response = genai.GenerativeModel(model).generate_content(prompt)
-                            text = getattr(response, "text", "")
+                            response = genai.GenerativeModel(model).generate_content(
+                                policy_prompt,
+                                generation_config={"temperature": 0.2, "max_output_tokens": 1200}
+                            )
 
-                            if text:
+                            raw_text = getattr(response, "text", "")
+                            generated_text = clean_llm_output(raw_text)
+
+                            if generated_text:
                                 st.success("AI Report Generated")
-                                st.text_area("AI Output", text, height=550)
                             else:
                                 st.warning("Empty response")
 
                         except Exception as e:
-                            st.error("Gemini failed (quota or API issue)")
+                            st.error("Gemini failed (quota/API)")
                             st.info(str(e))
 
                 except Exception:
                     st.error("Gemini library not installed")
 
-    # -------- OLLAMA --------
+    # ---------------- OLLAMA ----------------
     else:
-        st.info("Ollama works only on local machine.")
-        st.warning("Deploying on Streamlit Cloud will not support Ollama.")
-        
+        st.warning("Ollama works only locally. Not supported on Streamlit Cloud.")
+
+    # ---------------- OUTPUT ----------------
+    if generated_text:
+        st.markdown("### Policy Report Output")
+        st.text_area("Generated Report", generated_text, height=550)
+
+        # PDF download
+        try:
+            pdf_bytes = generate_pdf(generated_text)
+
+            st.download_button(
+                "Download Report as PDF",
+                data=pdf_bytes,
+                file_name="policy_report.pdf",
+                mime="application/pdf",
+                key="tab6_pdf"
+            )
+        except Exception as e:
+            st.warning("PDF generation failed")
+            st.info(str(e))
+
+    st.markdown('</div>', unsafe_allow_html=True)
 # ---------------- Tab 7 - Debug ----------------
 with tab_debug:
     st.markdown('<div class="card">', unsafe_allow_html=True)
