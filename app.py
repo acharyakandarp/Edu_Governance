@@ -1787,7 +1787,7 @@ payload = {
 }
 
 compact_payload = json.dumps(payload, default=str, indent=2)[:12000]
-    compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
+compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
 
     generated_text = ""
 
