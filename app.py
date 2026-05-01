@@ -927,22 +927,77 @@ def _choose_reporting_df() -> Optional[pd.DataFrame]:
 
     return None
 
-# ---------------- UI Layout (tabs + guided flow) ----------------
-# Header
-header_col1, header_col2 = st.columns([4,1])
-with header_col1:
-    st.markdown('<div class="big-title">Edu Governance System</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">District-centric PCA, clustering, diagnostics and policy-ready reporting — with optional LLM synthesis (Gemini / Ollama).</div>', unsafe_allow_html=True)
-with header_col2:
-    st.markdown(f"<div class='muted'>Run: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</div>", unsafe_allow_html=True)
+# ---------------- UI LAYOUT (HEADER + NAVIGATION) ----------------
 
-tabs = st.tabs(["1 · Data", "2 · Extraction", "3 · Clean & Edit", "4 · Analysis", "5 · Report", "6 · Synthesis", "7 · Debug"])
-# -------- Model Selection --------
-st.sidebar.title("AI Settings")
+# ===== HEADER =====
+header_col1, header_col2, header_col3 = st.columns([5, 2, 1])
+
+with header_col1:
+    st.markdown(
+        '<div class="big-title">Education Governance Intelligence Platform</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        '<div class="subtitle">System-level analytics, district segmentation, and policy intelligence for data-driven governance.</div>',
+        unsafe_allow_html=True
+    )
+
+with header_col2:
+    st.markdown("**System Status**")
+    try:
+        system_status()
+    except Exception:
+        st.markdown('<span class="badge-warning">Status Unknown</span>', unsafe_allow_html=True)
+
+with header_col3:
+    st.markdown(
+        f"<div class='muted'>Run<br>{datetime.utcnow().strftime('%d %b %Y<br>%H:%M UTC')}</div>",
+        unsafe_allow_html=True
+    )
+
+st.markdown("---")
+
+
+# ===== WORKFLOW NAVIGATION (TABS) =====
+tabs = st.tabs([
+    "📊 Data Ingestion",
+    "🧠 Data Preparation",
+    "📈 Statistical Analysis",
+    "🏛️ Policy Intelligence",
+    "🤖 AI Synthesis",
+    "⚙️ System & Debug"
+])
+
+
+# ===== SIDEBAR (CONTROL PANEL) =====
+st.sidebar.markdown("## ⚙️ Control Panel")
+
+# ---- Workflow Status ----
+st.sidebar.markdown("### Workflow Status")
+if "active_df" in st.session_state:
+    st.sidebar.success("Data Loaded")
+else:
+    st.sidebar.warning("Load Data First")
+
+if "suggestions" in st.session_state:
+    st.sidebar.success("Schema Ready")
+else:
+    st.sidebar.info("Run Extraction")
+
+# ---- AI SETTINGS ----
+st.sidebar.markdown("### 🤖 AI Engine")
 
 model_choice = st.sidebar.selectbox(
-    "Choose AI Model",
-    ["Gemini (Cloud)", "LLaMA (Local)"]
+    "Select Model",
+    ["Gemini (Cloud)", "LLaMA (Local)"],
+    key="model_selector"
+)
+
+# ---- CONTEXT INFO ----
+st.sidebar.markdown("### 📌 System Info")
+st.sidebar.caption(
+    "This platform performs PCA, clustering, and policy intelligence generation "
+    "for district-level education governance."
 )
 # ---------------- Tab 1 - Data ----------------
 with tabs[0]:
