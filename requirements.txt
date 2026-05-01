@@ -6,3 +6,4 @@ matplotlib
 requests
 google-generativeai
 plotly
+reportlab
