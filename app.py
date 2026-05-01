@@ -1770,7 +1770,23 @@ with tab_ai:
     )
 
     stats = compute_basic_stats(df_for_report)
-    compact_payload = json.dumps({"stats": stats}, indent=2)[:8000]
+
+numeric_cols = df_for_report.select_dtypes(include=[np.number]).columns.tolist()
+selected_vars = numeric_cols[:min(5, len(numeric_cols))]
+
+adv = run_advanced_analyses(
+    df_for_report,
+    selected_vars,
+    n_pca_components=3,
+    k_clusters=3
+)
+
+payload = {
+    "stats": stats,
+    "advanced_analysis": adv
+}
+
+compact_payload = json.dumps(payload, default=str, indent=2)[:12000]
     compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
 
     generated_text = ""
@@ -1816,27 +1832,52 @@ with tab_ai:
                     if st.button("Generate AI Report", key="tab6_run"):
 
                         prompt = f"""
-You are a senior government policy analyst.
+You are a senior government policy strategist.
 
-Write a professional policy report.
+Your job is to generate a HIGH-IMPACT policy report based strictly on data.
 
 STRICT RULES:
 - No markdown symbols (#, *)
-- Clean structured paragraphs
-- Formal tone
+- No generic statements
+- No vague recommendations
+- Every recommendation must be tied to data
+- Mention actual districts and clusters
+- Write like a government whitepaper
 
-Include:
+STRUCTURE:
+
+National Education System Intelligence Report
+
 Executive Summary
+- Highlight key disparities with numbers
+
 System Diagnosis
-District Segmentation (mention clusters and districts)
-Specific Recommendations
+- Explain correlations and systemic issues
+
+Structural Insights
+- Interpret PCA (what does dominant factor represent)
+
+District Segmentation
+- For EACH cluster:
+    - Mention districts inside cluster
+    - Describe performance (EVS, Math, Language, infra, ptr)
+    - Explain WHY cluster behaves like this
+
+Strategic Policy Recommendations
+- Cluster-specific interventions
+- Example:
+    "Districts D3, D4 (Cluster 0) require immediate teacher redistribution due to PTR > 40"
+
 Implementation Roadmap
+- Short, medium, long-term actions tied to clusters
 
 DATA:
 {compact_payload}
 
-CSV:
+CSV SAMPLE:
 {compact_csv}
+
+Return clean structured text.
 """
 
                         try:
