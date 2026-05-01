@@ -1792,7 +1792,7 @@ compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
 generated_text = ""
 
     # ---------------- LOCAL ----------------
-    if synth_choice == "Local Generator":
+if synth_choice == "Local Generator":
         st.success("Using deterministic policy generator.")
 
         generated_text = (
