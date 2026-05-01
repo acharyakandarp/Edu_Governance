@@ -1211,275 +1211,143 @@ with c3:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Tab 4 - Analysis ----------------
+# ---------------- Tab 4 - Analysis (ADVANCED) ----------------
 with tabs[3]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">PCA & Clustering (district-centric)</div>', unsafe_allow_html=True)
-    st.write("Configure preprocessing, run PCA, evaluate clustering diagnostics and run final clustering. The UI guides you step-by-step.")
+    st.markdown('<div class="section-title">Advanced PCA & Clustering Analytics</div>', unsafe_allow_html=True)
 
-    df_for_analysis = None
-    if "active_df" in st.session_state and isinstance(st.session_state["active_df"], pd.DataFrame) and not st.session_state["active_df"].empty:
-        df_for_analysis = st.session_state["active_df"].copy()
-    elif "df_edited" in st.session_state and isinstance(st.session_state["df_edited"], pd.DataFrame) and not st.session_state["df_edited"].empty:
-        df_for_analysis = st.session_state["df_edited"].copy()
-    else:
-        df_for_analysis = None
+    df_for_analysis = st.session_state.get("active_df") or st.session_state.get("df_edited")
 
-    if df_for_analysis is None or (isinstance(df_for_analysis, pd.DataFrame) and df_for_analysis.empty):
-        st.info("No data available. Load or edit a dataset in 'Clean & Edit' tab.")
-    else:
-        numeric_cols_all = df_for_analysis.select_dtypes(include=[np.number]).columns.tolist()
-        if not numeric_cols_all:
-            st.warning("No numeric columns found for PCA/KMeans. Make sure important numeric columns are coerced.")
-        else:
-            st.write(f"Numeric columns available: {', '.join(numeric_cols_all)}")
-            default_sel = [c for c in ['EVS', 'Language', 'Math'] if c in numeric_cols_all][:3]
-            cols_sel = st.multiselect("Select numeric variables for district feature vectors (complete-case will be used)", numeric_cols_all, default=default_sel)
-            if cols_sel:
-                # find label column
-                def find_entity_column_for_rows(df: pd.DataFrame) -> Optional[str]:
-                    if df is None or df.shape[1] == 0:
-                        return None
-                    cols = list(df.columns)
-                    lowered = [c.lower() for c in cols]
-                    for key in ["district", "district_name", "dist", "dist_name", "school_district", "area"]:
-                        if key in lowered:
-                            return cols[lowered.index(key)]
-                    for key in ["state", "region"]:
-                        if key in lowered:
-                            return cols[lowered.index(key)]
-                    for c in cols:
-                        if not pd.api.types.is_numeric_dtype(df[c]):
-                            return c
-                    return cols[0] if cols else None
+    if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
+        st.info("No data available. Prepare dataset first.")
+        st.stop()
 
-                id_col = find_entity_column_for_rows(df_for_analysis)
-                if id_col:
-                    st.write(f"Using `{id_col}` as district label for plotting.")
-                else:
-                    st.warning("Could not find a district ID column.")
+    numeric_cols = df_for_analysis.select_dtypes(include=[np.number]).columns.tolist()
 
-                df_complete = df_for_analysis.dropna(subset=cols_sel).copy()
-                n_total = len(df_for_analysis)
-                n_complete = len(df_complete)
-                if n_complete == 0:
-                    st.error("No rows have all selected values — pick other variables or clean data.")
-                else:
-                    st.write(f"Rows with complete values: {n_complete}/{n_total}")
+    if not numeric_cols:
+        st.warning("No numeric columns available.")
+        st.stop()
 
-                    with st.expander("Preprocessing & scaling options", expanded=False):
-                        scale_method = st.selectbox("Scaling / transformation", options=["z-score (StandardScaler)", "robust (median/IQR)", "yeo-johnson (power-transform)", "none"], index=0)
-                        log_transform = st.checkbox("Apply log(1+x) before scaling for skewed variables (optional)", value=False)
-                        run_outlier = st.checkbox("Detect Mahalanobis multivariate outliers (report only)", value=False)
+    cols_sel = st.multiselect("Select indicators", numeric_cols, default=numeric_cols[:3])
 
-        with st.expander("PCA & components", expanded=True):
+    if not cols_sel:
+        st.warning("Select variables.")
+        st.stop()
 
-                    # Check columns
-                    if len(cols_sel) == 0:
-                        st.warning("Please select at least one variable")
-                        st.stop()
-                
-                    # Check data availability
-                    df_complete = df_for_analysis.dropna(subset=cols_sel)
-                
-                    n_samples = df_complete.shape[0]
-                    n_features = len(cols_sel)
-                
-                    if n_samples < 2:
-                        st.warning("Not enough data rows for PCA (need at least 2 complete rows)")
-                        st.stop()
-                
-                    # VALID PCA LIMIT
-                    max_components_possible = min(6, n_features, n_samples)
-                
-                    if max_components_possible < 1:
-                        st.warning("PCA cannot be computed with current data")
-                        st.stop()
-                
-                    # SAFE slider
-                    n_comp = st.slider(
-                        "PCA components (for diagnostics & plotting)",
-                        min_value=1,
-                        max_value=max_components_possible,
-                        value=1
-                    )
-                    Xvals = df_complete[cols_sel].astype(float).values
-                    if log_transform:
-                        Xvals = np.log1p(Xvals)
-                    if scale_method.startswith("z-score"):
-                        scaler = StandardScaler(); Xs = scaler.fit_transform(Xvals); scaler_name = "zscore"
-                    elif scale_method.startswith("robust"):
-                        scaler = RobustScaler(); Xs = scaler.fit_transform(Xvals); scaler_name = "robust"
-                    elif scale_method.startswith("yeo"):
-                        try:
-                            scaler = PowerTransformer(method="yeo-johnson"); Xs = scaler.fit_transform(Xvals); scaler_name = "yeo-johnson"
-                        except Exception:
-                            scaler = StandardScaler(); Xs = scaler.fit_transform(Xvals); scaler_name = "zscore"
-                    else:
-                        scaler = None; Xs = Xvals.copy(); scaler_name = "none"
+    df_complete = df_for_analysis.dropna(subset=cols_sel)
 
-                    if run_outlier:
-                        try:
-                            mask_out, D2, pvals = mahalanobis_outlier_mask(Xs, threshold_p=0.001)
-                            n_out = int(mask_out.sum())
-                            st.write(f"Mahalanobis outliers detected (p < 0.001): {n_out} rows.")
-                            if n_out > 0:
-                                outlier_idx = np.where(mask_out)[0]
-                                outlier_districts = df_complete.reset_index(drop=True).iloc[outlier_idx][id_col].astype(str).tolist() if id_col and id_col in df_complete.columns else df_complete.reset_index(drop=True).iloc[outlier_idx].index.tolist()
-                                st.write("Outlier districts:", ", ".join(map(str, outlier_districts)))
-                        except Exception as e:
-                            st.write("Outlier detection failed or SciPy unavailable:", pretty_exception(e))
+    if df_complete.shape[0] < 2:
+        st.warning("Not enough data.")
+        st.stop()
 
-                    if SKLEARN_AVAILABLE:
-                        pca = PCA(n_components=n_comp, random_state=42)
-                        pcs = pca.fit_transform(Xs)
-                        pc_cols = [f"PC{i+1}" for i in range(n_comp)]
-                        exp_var = pd.Series(pca.explained_variance_ratio_, index=pc_cols).round(4)
-                        st.write("Explained variance ratio (per component):")
-                        st.dataframe(exp_var)
-                        loadings = pd.DataFrame(pca.components_.T, index=cols_sel, columns=pc_cols).round(4)
-                        st.write("PCA loadings (variables × components):")
-                        st.dataframe(loadings)
-                        if st.button("Run parallel analysis (100 permutations)"):
-                            try:
-                                pa = parallel_analysis(Xs, n_iter=100, random_state=42)
-                                obs = np.round(pa["observed"], 4).tolist()
-                                mean_rand = np.round(pa["mean_random"], 4).tolist()
-                                st.write("Observed eigenvalues:", obs)
-                                st.write("Mean random eigenvalues (parallel analysis):", mean_rand)
-                                fig_pa = px.line(x=list(range(1, len(obs)+1)), y=obs, markers=True, labels={"x":"Component #","y":"Eigenvalue"}, title="Parallel analysis — observed eigenvalues vs random mean")
-                                fig_pa.add_scatter(x=list(range(1, len(mean_rand)+1)), y=mean_rand, mode="lines+markers", name="random mean")
-                                st.plotly_chart(fig_pa, use_container_width=True)
-                            except Exception as e:
-                                st.write("Parallel analysis failed:", pretty_exception(e))
+    # ---------------- PCA SETUP ----------------
+    n_samples, n_features = df_complete.shape[0], len(cols_sel)
+    max_comp = min(6, n_samples, n_features)
 
-                        if STATSMODELS_AVAILABLE and st.checkbox("Compute VIF (multicollinearity check)", value=False):
-                            try:
-                                vif_df = compute_vif(df_complete, cols_sel)
-                                st.write("VIF (higher than 5 indicates multicollinearity concerns):")
-                                st.dataframe(vif_df)
-                            except Exception as e:
-                                st.write("VIF computation failed:", pretty_exception(e))
+    n_comp = st.slider("PCA Components", 1, max_comp, min(2, max_comp))
 
-                        st.markdown("**Clustering diagnostics & selection**")
-                        run_gap = st.checkbox("Compute gap statistic approximation (slower)", value=False)
-                        k_max = st.slider("K max (for diagnostics)", min_value=2, max_value=min(10, max(2, n_complete)), value=min(6, n_complete))
-                        n_pcs_for_clust = min(3, n_comp)
-                        X_for_k_eval = pcs[:, :n_pcs_for_clust] if pcs.shape[1] >= n_pcs_for_clust else pcs
-                        eval_df = evaluate_k_range(X_for_k_eval, k_min=2, k_max=k_max, random_state=42)
-                        st.write("Clustering indices across K:")
-                        st.dataframe(eval_df)
-                        if run_gap:
-                            try:
-                                gap_df = gap_statistic(X_for_k_eval, k_max=k_max, B=20, random_state=42)
-                                st.write("Gap statistic (approx):")
-                                st.dataframe(gap_df)
-                            except Exception as e:
-                                st.write("Gap statistic failed:", pretty_exception(e))
+    # ---------------- SCALING ----------------
+    scaler = StandardScaler()
+    X = scaler.fit_transform(df_complete[cols_sel])
 
-                        choose_k_method = st.radio("Choose how to set final K:", options=["Manual K", "Silhouette-max recommended", "Use gap statistic (if computed)"], index=1)
-                        rec_k = None
-                        if (not eval_df.empty) and ("silhouette" in eval_df.columns):
-                            try:
-                                rec_k = int(eval_df["silhouette"].idxmax())
-                            except Exception:
-                                rec_k = None
-                        if choose_k_method == "Manual K":
-                            final_k = st.slider("Final K for clustering", min_value=2, max_value=min(10, max(2, n_complete)), value=3)
-                        elif choose_k_method == "Silhouette-max recommended":
-                            final_k = rec_k if rec_k is not None else 3
-                            st.write(f"Recommended K by silhouette: {final_k}")
-                        else:
-                            if run_gap and 'gap_df' in locals() and gap_df is not None:
-                                try:
-                                    final_k = int(gap_df["gap"].idxmax())
-                                    st.write(f"Recommended K by gap: {final_k}")
-                                except Exception:
-                                    final_k = rec_k if rec_k is not None else 3
-                            else:
-                                final_k = rec_k if rec_k is not None else 3
+    # ---------------- PCA ----------------
+    pca = PCA(n_components=n_comp)
+    pcs = pca.fit_transform(X)
 
-                        clustering_methods = ["KMeans (on PCs)", "Agglomerative (on standardized raw variables)"]
-                        chosen_method = st.selectbox("Clustering algorithm for final run", clustering_methods, index=0)
+    exp_var = pca.explained_variance_ratio_
 
-                        if st.button("Run final clustering with diagnostics"):
-                            if chosen_method.startswith("KMeans"):
-                                X_cluster = X_for_k_eval
-                                km = KMeans(n_clusters=final_k, random_state=42, n_init=20)
-                                labels = km.fit_predict(X_cluster)
-                                result_df = df_complete.reset_index(drop=True).copy()
-                                result_df["_cluster"] = labels
-                                pcs_df_plot = pd.DataFrame(pcs, columns=pc_cols).reset_index(drop=True)
-                                if id_col and id_col in result_df.columns:
-                                    pcs_df_plot[id_col] = result_df[id_col].astype(str).reset_index(drop=True)
-                                else:
-                                    pcs_df_plot[id_col or "index_label"] = pcs_df_plot.index.astype(str)
-                                for v in cols_sel:
-                                    pcs_df_plot[v] = result_df[v].reset_index(drop=True)
-                                pcs_df_plot["cluster"] = result_df["_cluster"].astype(str)
-                                st.session_state["last_kmeans_result"] = result_df
-                                hover_info = cols_sel + ([id_col] if id_col else [])
-                                if "PC1" in pcs_df_plot.columns and "PC2" in pcs_df_plot.columns:
-                                    fig = px.scatter(pcs_df_plot, x="PC1", y="PC2", color="cluster", hover_data=hover_info, title=f"KMeans (k={final_k}) on first two PCs")
-                                    st.plotly_chart(fig, use_container_width=True)
-                                try:
-                                    cluster_sizes = result_df["_cluster"].value_counts().sort_index().to_dict()
-                                    st.write("Cluster sizes:", cluster_sizes)
-                                    centers_median = result_df.groupby("_cluster")[cols_sel].median().round(3)
-                                    st.write("Cluster medians (original variables):")
-                                    st.dataframe(centers_median)
-                                    st.write("Districts in each cluster:")
-                                    for cl in sorted(result_df["_cluster"].unique()):
-                                        members = result_df[result_df["_cluster"]==cl][id_col].astype(str).tolist() if id_col and id_col in result_df.columns else result_df[result_df["_cluster"]==cl].index.astype(str).tolist()
-                                        st.write(f"- Cluster {cl}: {', '.join(map(str, members))}")
-                                except Exception as e:
-                                    st.write("Could not compute cluster summary:", pretty_exception(e))
-                                if st.checkbox("Run bootstrap stability (ARI, 50 bootstraps)", value=False):
-                                    try:
-                                        stab = clustering_stability_bootstrap(X_cluster, labels, final_k, n_boot=50, method='kmeans', random_state=42)
-                                        st.write(f"Bootstrap ARI mean: {stab['ari_mean']:.3f} (std {stab['ari_std']:.3f})")
-                                    except Exception as e:
-                                        st.write("Stability computation failed:", pretty_exception(e))
-                                if st.checkbox("Run cluster profiling & inferential tests (ANOVA/Kruskal)", value=True):
-                                    try:
-                                        profile = cluster_profiling_tests(result_df, cols_sel, cluster_labels_col="_cluster")
-                                        st.write("Cluster profiling (summary & tests):")
-                                        st.json(profile)
-                                    except Exception as e:
-                                        st.write("Profiling failed:", pretty_exception(e))
-                                try:
-                                    csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-                                    st.download_button("Download cluster assignments (CSV)", data=csv_bytes, file_name="kmeans_clusters.csv", mime="text/csv")
-                                except Exception:
-                                    pass
-                            else:
-                                if scale_method != "none":
-                                    scaler2 = StandardScaler()
-                                    X_for_hc = scaler2.fit_transform(Xvals)
-                                else:
-                                    X_for_hc = Xvals.copy()
-                                linkage = st.selectbox("Linkage for hierarchical", ["ward","complete","average","single"], index=0)
-                                hc = AgglomerativeClustering(n_clusters=final_k, linkage=linkage)
-                                labels = hc.fit_predict(X_for_hc)
-                                result_df = df_complete.reset_index(drop=True).copy()
-                                result_df["_cluster"] = labels
-                                st.session_state["last_hc_result"] = result_df
-                                st.write("Cluster medians (original variables):")
-                                centers_median = result_df.groupby("_cluster")[cols_sel].median()
-                                st.dataframe(centers_median.round(3))
-                                st.write("Districts in each cluster:")
-                                for cl in sorted(result_df["_cluster"].unique()):
-                                    members = result_df[result_df["_cluster"]==cl][id_col].astype(str).tolist() if id_col and id_col in result_df.columns else result_df[result_df["_cluster"]==cl].index.astype(str).tolist()
-                                    st.write(f"- Cluster {cl}: {', '.join(map(str, members))}")
-                                try:
-                                    csv_bytes2 = result_df.to_csv(index=False).encode("utf-8")
-                                    st.download_button("Download hierarchical cluster assignments (CSV)", data=csv_bytes2, file_name="hc_clusters.csv", mime="text/csv")
-                                except Exception:
-                                    pass
-                    else:
-                        st.info("Install scikit-learn to run PCA & clustering.")
+    # 📊 Scree plot
+    fig_scree = px.line(
+        x=list(range(1, len(exp_var)+1)),
+        y=exp_var,
+        markers=True,
+        title="Scree Plot (Variance Explained)"
+    )
+    st.plotly_chart(fig_scree, use_container_width=True)
+
+    # 📊 Cumulative variance
+    cum_var = np.cumsum(exp_var)
+    fig_cum = px.line(
+        x=list(range(1, len(cum_var)+1)),
+        y=cum_var,
+        markers=True,
+        title="Cumulative Variance"
+    )
+    st.plotly_chart(fig_cum, use_container_width=True)
+
+    st.dataframe(pd.DataFrame({
+        "Component": range(1, len(exp_var)+1),
+        "Explained Variance": exp_var,
+        "Cumulative": cum_var
+    }))
+
+    # ---------------- CORRELATION ----------------
+    st.markdown("### Correlation Heatmap")
+    corr = df_complete[cols_sel].corr()
+    fig_corr = px.imshow(corr, text_auto=True, title="Correlation Matrix")
+    st.plotly_chart(fig_corr, use_container_width=True)
+
+    # ---------------- OUTLIERS ----------------
+    if st.checkbox("Detect Outliers"):
+        z_scores = np.abs((X - X.mean(axis=0)) / X.std(axis=0))
+        outliers = (z_scores > 3).any(axis=1)
+        st.write(f"Outliers detected: {outliers.sum()}")
+
+    # ---------------- CLUSTERING ----------------
+    k_max = min(10, n_samples - 1)
+
+    scores = []
+    for k in range(2, k_max+1):
+        labels = KMeans(n_clusters=k, n_init=10).fit_predict(pcs)
+        score = silhouette_score(pcs, labels)
+        scores.append((k, score))
+
+    best_k = max(scores, key=lambda x: x[1])[0]
+
+    st.write(f"Recommended K (Silhouette): {best_k}")
+
+    k = st.slider("Clusters", 2, k_max, best_k)
+
+    model = KMeans(n_clusters=k, n_init=10)
+    labels = model.fit_predict(pcs)
+
+    df_complete["_cluster"] = labels
+
+    # ---------------- VISUAL ----------------
+    if pcs.shape[1] >= 2:
+        plot_df = pd.DataFrame(pcs[:, :2], columns=["PC1", "PC2"])
+        plot_df["cluster"] = labels.astype(str)
+
+        fig = px.scatter(
+            plot_df,
+            x="PC1",
+            y="PC2",
+            color="cluster",
+            title="Cluster Visualization"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    # ---------------- CLUSTER PROFILE ----------------
+    st.markdown("### Cluster Profiles")
+    profile = df_complete.groupby("_cluster")[cols_sel].mean().round(2)
+    st.dataframe(profile)
+
+    # ---------------- POLICY INSIGHTS ----------------
+    st.markdown("### Policy Insights")
+    for col in cols_sel:
+        mean_val = df_complete[col].mean()
+        st.write(f"- {col}: Avg = {round(mean_val,2)}")
+
+    # ---------------- DOWNLOAD ----------------
+    st.download_button(
+        "Download Results",
+        df_complete.to_csv(index=False),
+        "analysis_results.csv",
+        "text/csv"
+    )
+
     st.markdown('</div>', unsafe_allow_html=True)
-
+    
 # ---------------- Tab 5 - Report ----------------
 with tabs[4]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
