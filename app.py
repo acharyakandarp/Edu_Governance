@@ -1502,6 +1502,12 @@ with tabs[4]:
 
 # ---------------- Tab 6 - Synthesis ----------------
 with tabs[5]:
+    # Model selection control
+if model_choice == "Gemini (Cloud)":
+    st.success("Using Gemini")
+
+elif model_choice == "LLaMA (Local)":
+    st.warning("⚠️ LLaMA works only locally, not in deployed app")
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">LLM Synthesis (Gemini or Ollama)</div>', unsafe_allow_html=True)
     st.write("Choose synthesis engine to produce a polished narrative from computed facts. Gemini is cloud-based and requires an API key; Ollama runs locally if installed.")
