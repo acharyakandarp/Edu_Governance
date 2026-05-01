@@ -790,7 +790,13 @@ with header_col2:
     st.markdown(f"<div class='muted'>Run: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</div>", unsafe_allow_html=True)
 
 tabs = st.tabs(["1 · Data", "2 · Extraction", "3 · Clean & Edit", "4 · Analysis", "5 · Report", "6 · Synthesis", "7 · Debug"])
+# -------- Model Selection --------
+st.sidebar.title("AI Settings")
 
+model_choice = st.sidebar.selectbox(
+    "Choose AI Model",
+    ["Gemini (Cloud)", "LLaMA (Local)"]
+)
 # ---------------- Tab 1 - Data ----------------
 with tabs[0]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
