@@ -1348,7 +1348,7 @@ with tabs[3]:
 
     st.markdown('</div>', unsafe_allow_html=True)
     
-# ---------------- Tab 5 - Policy Report ----------------
+# ---------------- Tab 5 - Policy Intelligence Report ----------------
 with tabs[4]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Policy Intelligence Report</div>', unsafe_allow_html=True)
@@ -1367,95 +1367,105 @@ with tabs[4]:
         st.warning("Need at least 2 numeric variables.")
         st.stop()
 
-    selected_vars = st.multiselect("Select indicators", numeric_cols, default=numeric_cols[:3])
+    selected_vars = st.multiselect(
+        "Select indicators",
+        numeric_cols,
+        default=numeric_cols[:3],
+        key="tab5_select_vars"
+    )
 
     if len(selected_vars) < 2:
         st.warning("Select at least 2 variables.")
         st.stop()
 
-    with st.spinner("Running analysis..."):
+    with st.spinner("Running advanced analysis..."):
         stats = compute_basic_stats(df_for_report)
         adv = run_advanced_analyses(df_for_report, selected_vars, 3, 3)
 
-    # ---------------- POLICY REPORT GENERATOR ----------------
+    # ----------- HIGH-QUALITY POLICY REPORT GENERATOR -----------
     def generate_policy_report(stats, adv):
-        text = []
+        report = []
 
-        # 1. Executive Brief
-        text.append("# Executive Intelligence Brief\n")
-        text.append(
-            "The system exhibits a strong performance gradient driven by structural capacity differences. "
-            "Learning outcomes are tightly linked to infrastructure and teacher distribution."
+        report.append("# National Education System Intelligence Report\n")
+
+        # Executive Summary
+        report.append("## 1. Executive Summary\n")
+        report.append(
+            "This analysis reveals structurally embedded disparities across districts. "
+            "Performance variation is not random but driven by systemic capacity factors such as infrastructure, teacher distribution, and governance efficiency."
         )
 
-        # 2. System Diagnosis
-        text.append("\n## System Diagnosis\n")
-        text.append(
-            "High correlations indicate that performance disparities are systemic rather than subject-specific. "
-            "Districts are differentiated by overall capacity rather than isolated weaknesses."
+        # System Diagnosis
+        report.append("\n## 2. System Diagnosis\n")
+        report.append(
+            "Strong inter-variable correlations indicate that educational outcomes move together. "
+            "This suggests a unified system constraint rather than isolated subject-level weaknesses."
         )
 
-        # 3. PCA Insight
+        # PCA Insight
         if adv and adv.get("pca"):
             var = adv["pca"]["explained_variance_ratio"][0]
-            text.append("\n## Latent Structure\n")
-            text.append(
-                f"A dominant latent factor explains {round(var*100,1)}% of variance, indicating unified system behavior."
+            report.append("\n## 3. Structural Insight (PCA)\n")
+            report.append(
+                f"A dominant latent factor explains {round(var*100,1)}% of total variance, confirming that district performance is governed by a core systemic dimension."
             )
 
-        # 4. Cluster Narratives
+        # Cluster Analysis
         if adv and adv.get("kmeans"):
-            text.append("\n## Cluster Typologies\n")
+            report.append("\n## 4. District Segmentation\n")
             for cl, size in adv["kmeans"]["cluster_sizes"].items():
-                text.append(f"\n### Cluster {cl} (n={size})")
-                text.append(
-                    "Distinct structural pattern requiring targeted intervention strategy."
+                report.append(f"\n### Cluster {cl} — {size} districts")
+                report.append(
+                    "This cluster represents a distinct structural profile requiring targeted policy design rather than generic interventions."
                 )
 
-        # 5. Recommendations
-        text.append("\n## Strategic Policy Recommendations\n")
-        text.append("""
-1. **Infrastructure Prioritization**
-   - Focus on low-performing clusters
-   - Expected high marginal gains
+        # Deep Recommendations
+        report.append("\n## 5. Strategic Policy Actions\n")
+        report.append("""
+### 5.1 Infrastructure Equalization
+Target districts with low infrastructure scores to unlock immediate learning gains.
 
-2. **PTR Optimization**
-   - Deploy teachers strategically
-   - Introduce blended learning support
+### 5.2 Teacher Allocation Reform
+Optimize PTR by redistributing teachers dynamically across districts.
 
-3. **Cluster-Based Governance**
-   - Avoid uniform policy
-   - Tailor interventions per cluster
+### 5.3 Cluster-Based Governance Model
+Move away from uniform policy. Implement cluster-specific strategies.
 
-4. **Monitoring System**
-   - Build real-time district dashboards
-   - Enable adaptive policymaking
+### 5.4 Data-Driven Monitoring
+Establish real-time dashboards for continuous performance tracking.
+
+### 5.5 Systemic Capacity Building
+Invest in leadership, training, and institutional strengthening.
 """)
 
-        # 6. Roadmap
-        text.append("\n## Implementation Roadmap\n")
-        text.append("""
-- Short Term: Identify critical districts
-- Medium Term: Deploy targeted interventions
-- Long Term: Structural system strengthening
+        # Roadmap
+        report.append("\n## 6. Implementation Roadmap\n")
+        report.append("""
+- **Short Term:** Identify critical districts and deploy rapid interventions  
+- **Medium Term:** Strengthen infrastructure and staffing systems  
+- **Long Term:** Build resilient, adaptive education governance frameworks  
 """)
 
-        return "\n".join(text)
+        report.append("\n---\n*End of Policy Intelligence Report*")
+
+        return "\n".join(report)
 
     report_text = generate_policy_report(stats, adv)
 
-    st.subheader("Policy Report")
-    st.text_area("Generated Report", report_text, height=550)
+    st.subheader("Generated Policy Report")
+    st.text_area("Report Output", report_text, height=550)
 
     st.download_button(
         "Download Report",
         report_text,
-        "policy_report.txt"
+        "policy_report.txt",
+        key="tab5_download"
     )
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Tab 6 - AI Synthesis ----------------
+
+# ---------------- Tab 6 - AI Policy Synthesis ----------------
 with tabs[5]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">AI Policy Synthesis</div>', unsafe_allow_html=True)
@@ -1470,23 +1480,26 @@ with tabs[5]:
 
     synth_choice = st.selectbox(
         "Synthesis Engine",
-        ["Local Policy Generator", "Gemini (Cloud)", "Ollama (Local)"]
+        ["Local Generator", "Gemini (Cloud)", "Ollama (Local)"],
+        key="tab6_engine"
     )
 
     stats = compute_basic_stats(df_for_report)
-    payload = json.dumps({"stats": stats}, indent=2)[:12000]
+    payload = json.dumps({"stats": stats}, indent=2)[:10000]
 
-    if synth_choice == "Local Policy Generator":
-        st.info("Using deterministic policy generator (safe).")
+    # -------- LOCAL --------
+    if synth_choice == "Local Generator":
+        st.success("Using safe local synthesis (recommended).")
 
+    # -------- GEMINI --------
     elif synth_choice == "Gemini (Cloud)":
-        consent = st.checkbox("Consent to send data")
+        consent = st.checkbox("Allow external API call", key="tab6_consent")
 
         if consent:
             api_key = os.getenv("GEMINI_API_KEY")
 
             if not api_key:
-                st.error("Missing API key")
+                st.error("Missing GEMINI_API_KEY")
             else:
                 try:
                     import google.generativeai as genai
@@ -1494,24 +1507,25 @@ with tabs[5]:
 
                     model = st.selectbox(
                         "Model",
-                        ["models/gemini-2.5-flash"]
+                        ["models/gemini-2.5-flash"],
+                        key="tab6_model"
                     )
 
-                    if st.button("Generate AI Report"):
+                    if st.button("Generate AI Report", key="tab6_run"):
                         prompt = f"""
-You are a senior education policy analyst.
+You are a senior government policy advisor.
 
-Generate a structured policy report with:
-- Executive brief
-- System diagnosis
-- Cluster interpretation
-- Deep recommendations
-- Implementation roadmap
+Generate a HIGH-QUALITY structured report:
+- Executive Summary
+- System Diagnosis
+- Cluster Analysis
+- Deep Recommendations (non-generic)
+- Implementation Roadmap
 
 DATA:
 {payload}
 
-Make it formal, structured, and actionable.
+Make it formal, structured, and policy-grade.
 """
 
                         try:
@@ -1519,20 +1533,22 @@ Make it formal, structured, and actionable.
                             text = getattr(response, "text", "")
 
                             if text:
-                                st.success("Generated")
-                                st.text_area("AI Report", text, height=550)
+                                st.success("AI Report Generated")
+                                st.text_area("AI Output", text, height=550)
                             else:
                                 st.warning("Empty response")
 
                         except Exception as e:
-                            st.error("Gemini failed. Using fallback.")
+                            st.error("Gemini failed (quota or API issue)")
                             st.info(str(e))
 
                 except Exception:
-                    st.error("Gemini library missing")
+                    st.error("Gemini library not installed")
 
+    # -------- OLLAMA --------
     else:
-        st.warning("Ollama works only locally.")
+        st.info("Ollama works only on local machine.")
+        st.warning("Deploying on Streamlit Cloud will not support Ollama.")
         
 # ---------------- Tab 7 - Debug ----------------
 with tabs[6]:
