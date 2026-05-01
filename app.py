@@ -58,55 +58,202 @@ try:
 except Exception:
     OLLAMA_AVAILABLE = False
 
-# ---------------- Styling (small, tasteful) ----------------
-st.set_page_config(page_title="Edu Governance — PCA & Clustering", layout="wide")
-st.markdown(
-    """
-    <style>
-    /* fonts & base */
-    .big-title { font-size:28px; font-weight:700; margin-bottom:4px; }
-    .subtitle { color: #6b7280; margin-top:0; margin-bottom:8px; }
-    .card { background: #ffffff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
-    .muted { color: #6b7280; font-size:13px; }
-    .compact { padding:6px 8px; border-radius:6px; border:1px solid #eee; background:#fafafa; }
-    .section-title { font-size:18px; font-weight:600; margin-bottom:8px; }
-    .kbd { background:#f3f4f6; padding:3px 6px; border-radius:4px; font-family:monospace; font-size:12px; }
-    .small { font-size:13px; color:#374151; }
-    </style>
-    """,
-    unsafe_allow_html=True,
+# ---------------- GLOBAL UI & DESIGN SYSTEM ----------------
+st.set_page_config(
+    page_title="Edu Governance Intelligence Platform",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ---------------- Helpers ----------------
+st.markdown("""
+<style>
+
+/* ===================== */
+/* 🎨 DESIGN SYSTEM */
+/* ===================== */
+
+/* Typography */
+html, body, [class*="css"]  {
+    font-family: 'Inter', 'Source Sans Pro', sans-serif;
+}
+
+/* Titles */
+.big-title {
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #111827;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+/* Section */
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #111827;
+}
+
+.section-desc {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 14px;
+}
+
+/* Cards */
+.card {
+    background: #ffffff;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 16px;
+}
+
+/* KPI */
+.kpi {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.kpi-label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Status Badges */
+.badge-success {
+    background: #dcfce7;
+    color: #166534;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+/* Buttons */
+.stButton>button {
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 500;
+}
+
+/* Inputs */
+.stSelectbox, .stMultiselect {
+    border-radius: 8px;
+}
+
+/* Dataframe */
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# ---------------- SYSTEM STATUS ----------------
+def system_status():
+    if "active_df" in st.session_state:
+        st.markdown('<span class="badge-success">Data Ready</span>', unsafe_allow_html=True)
+    else:
+        st.markdown('<span class="badge-warning">Awaiting Data</span>', unsafe_allow_html=True)
+
+
+# ---------------- HELPERS ----------------
 def pretty_exception(e: Exception) -> str:
     return f"{type(e).__name__}: {str(e)}"
 
+
+# ---------------- ENHANCED SAMPLE DATA (60 DISTRICTS) ----------------
 @st.cache_data
 def load_sample() -> pd.DataFrame:
-    # One row per district (expected): aggregated scores per district
-    return pd.DataFrame({
-        'state': ['S1', 'S1', 'S2', 'S2', 'S3', 'S3', 'S4', 'S4', 'S5', 'S5'],
-        'district': ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10'],
-        'EVS': [82, 78, 45, 50, 90, 88, 40, 42, 76, 79],
-        'Language': [80, 77, 60, 62, 91, 85, 58, 55, 75, 73],
-        'Math': [55, 52, 78, 80, 50, 48, 81, 79, 57, 59],
-        'infra': [0.7, 0.6, 0.4, 0.45, 0.9, 0.85, 0.3, 0.25, 0.65, 0.68],
-        'ptr': [28, 30, 40, 38, 22, 24, 45, 46, 29, 27]
-    })
+    np.random.seed(42)
 
+    states = ["S1", "S2", "S3", "S4", "S5"]
+    districts = [f"D{i}" for i in range(1, 61)]
+
+    data = []
+
+    for i, d in enumerate(districts):
+        state = states[i % len(states)]
+
+        # simulate realistic variation clusters
+        base = np.random.choice(["high", "medium", "low"])
+
+        if base == "high":
+            evs = np.random.normal(85, 5)
+            lang = np.random.normal(83, 5)
+            math = np.random.normal(75, 6)
+            infra = np.random.uniform(0.7, 0.95)
+            ptr = np.random.uniform(20, 30)
+
+        elif base == "medium":
+            evs = np.random.normal(65, 7)
+            lang = np.random.normal(68, 6)
+            math = np.random.normal(60, 7)
+            infra = np.random.uniform(0.5, 0.7)
+            ptr = np.random.uniform(28, 38)
+
+        else:
+            evs = np.random.normal(45, 6)
+            lang = np.random.normal(50, 7)
+            math = np.random.normal(70, 6)
+            infra = np.random.uniform(0.3, 0.5)
+            ptr = np.random.uniform(35, 50)
+
+        data.append({
+            "state": state,
+            "district": d,
+            "EVS": round(evs, 1),
+            "Language": round(lang, 1),
+            "Math": round(math, 1),
+            "infra": round(infra, 2),
+            "ptr": round(ptr, 1)
+        })
+
+    return pd.DataFrame(data)
+
+
+# ---------------- DATA SANITIZATION ----------------
 def sanitize_sample(df: Optional[pd.DataFrame], max_rows: int = 20) -> pd.DataFrame:
     if df is None:
         return pd.DataFrame()
+
     pii_keywords = ['name', 'id', 'email', 'phone', 'mobile', 'address']
     safe_cols = [c for c in df.columns if not any(k in c.lower() for k in pii_keywords)]
+
     return df[safe_cols].head(max_rows).copy()
+
 
 def compact_schema_and_examples(df: Optional[pd.DataFrame], max_examples: int = 1) -> str:
     if df is None or df.shape[0] == 0:
         return ""
-    head = df.head(max_examples)
+
     buf = io.StringIO()
-    head.to_csv(buf, index=False, lineterminator="\n")
+    df.head(max_examples).to_csv(buf, index=False)
     return buf.getvalue().strip()
 
 # ---------------- Robust GenAI extractor ----------------
