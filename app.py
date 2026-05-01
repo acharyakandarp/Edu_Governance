@@ -1793,45 +1793,45 @@ generated_text = ""
 
     # ---------------- LOCAL ----------------
 if synth_choice == "Local Generator":
-        st.success("Using deterministic policy generator.")
+    st.success("Using deterministic policy generator.")
 
-        generated_text = (
-            "National Education System Intelligence Report\n\n"
-            "Executive Summary\n"
-            "The analysis identifies systemic disparities driven by infrastructure gaps, teacher distribution, and performance clustering.\n\n"
-            "System Diagnosis\n"
-            "Educational indicators move together, indicating systemic constraints rather than isolated issues.\n\n"
-            "Policy Direction\n"
-            "Interventions must be cluster-specific and resource-targeted.\n\n"
-            "Implementation Roadmap\n"
-            "Short term: Identify critical districts\n"
-            "Medium term: Deploy targeted interventions\n"
-            "Long term: Strengthen governance capacity\n"
-        )
+    generated_text = (
+        "National Education System Intelligence Report\n\n"
+        "Executive Summary\n"
+        "The analysis identifies systemic disparities driven by infrastructure gaps, teacher distribution, and performance clustering.\n\n"
+        "System Diagnosis\n"
+        "Educational indicators move together, indicating systemic constraints rather than isolated issues.\n\n"
+        "Policy Direction\n"
+        "Interventions must be cluster-specific and resource-targeted.\n\n"
+        "Implementation Roadmap\n"
+        "Short term: Identify critical districts\n"
+        "Medium term: Deploy targeted interventions\n"
+        "Long term: Strengthen governance capacity\n"
+    )
 
-    # ---------------- GEMINI ----------------
-        elif synth_choice == "Gemini (Cloud)":
-        consent = st.checkbox("Allow external API call", key="tab6_consent")
+# ---------------- GEMINI ----------------
+elif synth_choice == "Gemini (Cloud)":
+    consent = st.checkbox("Allow external API call", key="tab6_consent")
 
-        if consent:
-            api_key = os.getenv("GEMINI_API_KEY")
+    if consent:
+        api_key = os.getenv("GEMINI_API_KEY")
 
         if not api_key:
-                st.error("Missing GEMINI_API_KEY")
-            else:
-                try:
-                    import google.generativeai as genai
-                    genai.configure(api_key=api_key)
+            st.error("Missing GEMINI_API_KEY")
+        else:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=api_key)
 
-                    model = st.selectbox(
-                        "Model",
-                        ["models/gemini-2.5-flash"],
-                        key="tab6_model"
-                    )
+                model = st.selectbox(
+                    "Model",
+                    ["models/gemini-2.5-flash"],
+                    key="tab6_model"
+                )
 
-                    if st.button("Generate AI Report", key="tab6_run"):
+                if st.button("Generate AI Report", key="tab6_run"):
 
-                        prompt = f"""
+                    prompt = f"""
 You are a senior government policy strategist.
 
 Your job is to generate a HIGH-IMPACT policy report based strictly on data.
@@ -1880,69 +1880,84 @@ CSV SAMPLE:
 Return clean structured text.
 """
 
-                        try:
-                            response = genai.GenerativeModel(model).generate_content(
-                                prompt,
-                                generation_config={"temperature": 0.2, "max_output_tokens": 1200}
-                            )
+                    try:
+                        response = genai.GenerativeModel(model).generate_content(
+                            prompt,
+                            generation_config={
+                                "temperature": 0.2,
+                                "max_output_tokens": 1200
+                            }
+                        )
 
-                            raw = getattr(response, "text", "")
-                            generated_text = clean_llm_output(raw)
+                        raw = getattr(response, "text", "")
+                        generated_text = clean_llm_output(raw)
 
-                            if generated_text:
-                                st.success("AI Report Generated")
-                            else:
-                                st.warning("Empty response")
+                        if generated_text:
+                            st.success("AI Report Generated")
+                        else:
+                            st.warning("Empty response")
 
-                        except Exception as e:
-                            st.error("Gemini failed (quota/API)")
-                            st.info(str(e))
+                    except Exception as e:
+                        st.error("Gemini failed (quota/API)")
+                        st.info(str(e))
 
-                except Exception:
-                    st.error("Gemini library not installed")
+            except Exception:
+                st.error("Gemini library not installed")
 
-    # ---------------- OLLAMA ----------------
+# ---------------- OLLAMA ----------------
+else:
+    st.warning("Ollama not supported on Streamlit Cloud.")
+
+# ---------------- OUTPUT ----------------
+if generated_text:
+    st.markdown("### Policy Report Output")
+    st.text_area("Generated Report", generated_text, height=550)
+
+    pdf_bytes = generate_pdf(generated_text)
+
+    if pdf_bytes:
+        st.download_button(
+            "Download Report as PDF",
+            data=pdf_bytes,
+            file_name="policy_report.pdf",
+            mime="application/pdf",
+            key="tab6_pdf"
+        )
     else:
-        st.warning("Ollama not supported on Streamlit Cloud.")
+        st.warning("PDF unavailable (install reportlab)")
 
-    # ---------------- OUTPUT ----------------
-    if generated_text:
-        st.markdown("### Policy Report Output")
-        st.text_area("Generated Report", generated_text, height=550)
+        st.download_button(
+            "Download Report as TXT",
+            data=generated_text,
+            file_name="policy_report.txt",
+            mime="text/plain",
+            key="tab6_txt"
+        )
 
-        pdf_bytes = generate_pdf(generated_text)
+st.markdown('</div>', unsafe_allow_html=True)
 
-        if pdf_bytes:
-            st.download_button(
-                "Download Report as PDF",
-                data=pdf_bytes,
-                file_name="policy_report.pdf",
-                mime="application/pdf",
-                key="tab6_pdf"
-            )
-        else:
-            st.warning("PDF unavailable (install reportlab)")
 
-            st.download_button(
-                "Download Report as TXT",
-                data=generated_text,
-                file_name="policy_report.txt",
-                mime="text/plain",
-                key="tab6_txt"
-            )
-
-    st.markdown('</div>', unsafe_allow_html=True)
-    
 # ---------------- Tab 7 - Debug ----------------
 with tab_debug:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Debug & Provenance</div>', unsafe_allow_html=True)
+
     if "last_mapping" in st.session_state:
         st.markdown("**Last mapping applied (provenance)**")
         st.json(st.session_state["last_mapping"])
+
     st.markdown("---")
     st.markdown("**Local debug files (data/)**")
-    dbg_files = sorted(glob("data/*genai*") + glob("data/*synthesis*") + glob("data/*ollama*") + glob("data/*genai_*"), key=os.path.getmtime, reverse=True)
+
+    dbg_files = sorted(
+        glob("data/*genai*") +
+        glob("data/*synthesis*") +
+        glob("data/*ollama*") +
+        glob("data/*genai_*"),
+        key=os.path.getmtime,
+        reverse=True
+    )
+
     if dbg_files:
         st.write(f"Found {len(dbg_files)} debug files (most recent first).")
         for fpath in dbg_files[:10]:
@@ -1954,12 +1969,16 @@ with tab_debug:
                 except Exception:
                     st.write("Could not render JSON — open file in editor.")
     else:
-        st.write("No debug files found yet. They will be created automatically if external calls fail.")
+        st.write("No debug files found yet.")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Footer / quick checks ----------------
+
+# ---------------- Footer ----------------
 st.markdown("---")
-footer_col1, footer_col2, footer_col3 = st.columns([1,2,1])
+
+footer_col1, footer_col2, footer_col3 = st.columns([1, 2, 1])
+
 with footer_col1:
     if st.button("Run Gemini ping test"):
         txt, meta, err = gemini_ping_test()
@@ -1967,11 +1986,15 @@ with footer_col1:
             st.error(err)
         else:
             st.success(f"Gemini ping OK: {txt}")
+
 with footer_col2:
-    st.markdown("<div class='muted'>If external synthesis fails, the deterministic local report in Tab 'Report' always provides a complete narrative you can download and present.</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='muted'>If external synthesis fails, use the deterministic report.</div>",
+        unsafe_allow_html=True
+    )
+
 with footer_col3:
     if OLLAMA_AVAILABLE:
-        st.success("Ollama client available")
+        st.success("Ollama available")
     else:
-        st.info("Ollama client not detected (local synthesis unavailable)")
-
+        st.info("Ollama not detected")
