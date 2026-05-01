@@ -958,17 +958,17 @@ with header_col3:
 st.markdown("---")
 
 
-# ===== WORKFLOW NAVIGATION (PROFESSIONAL TABS) =====
+# ===== WORKFLOW NAVIGATION (FINAL — ALIGNED WITH SYSTEM) =====
 
-tab_data, tab_prep, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
+tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
     "📊 Data Ingestion",
     "🧠 Data Preparation",
+    "🧹 Clean & Edit",
     "📈 Statistical Analysis",
     "🏛️ Policy Intelligence",
     "🤖 AI Synthesis",
     "⚙️ System Debug"
 ])
-
 
 # ===== SIDEBAR (CONTROL PANEL) =====
 st.sidebar.markdown("## ⚙️ Control Panel")
@@ -1003,7 +1003,7 @@ st.sidebar.caption(
 # ================================
 # TAB 1 — DATA INGESTION
 # ================================
-with tabs[0]:
+with tab_data:
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Data Ingestion</div>', unsafe_allow_html=True)
@@ -1090,7 +1090,7 @@ with tabs[0]:
 # ================================
 # TAB 2 — DATA PREPARATION (EXTRACTION)
 # ================================
-with tabs[1]:
+with tab_prep:
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Data Preparation & Schema Mapping</div>', unsafe_allow_html=True)
@@ -1218,7 +1218,7 @@ with tabs[1]:
     st.markdown('</div>', unsafe_allow_html=True)
     
 # ---------------- Tab 3 - Clean & Edit ----------------
-with tabs[2]:
+with tab_clean:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Clean & Edit</div>', unsafe_allow_html=True)
     st.write("Apply mappings suggested in Extraction, edit in-grid, coerce numeric-like columns, and save/load cleaned datasets.")
@@ -1436,7 +1436,7 @@ with c3:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Tab 4 - Analysis (ADVANCED) ----------------
-with tabs[3]:
+with tab_analysis:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Advanced PCA & Clustering Analytics</div>', unsafe_allow_html=True)
 
@@ -1573,7 +1573,7 @@ with tabs[3]:
     st.markdown('</div>', unsafe_allow_html=True)
     
 # ---------------- Tab 5 - Policy Intelligence Report ----------------
-with tabs[4]:
+with tab_ai:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Policy Intelligence Report</div>', unsafe_allow_html=True)
 
@@ -1798,7 +1798,7 @@ with tabs[4]:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Tab 6 - AI Policy Synthesis ----------------
-with tabs[5]:
+with tab_ai:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">AI Policy Synthesis</div>', unsafe_allow_html=True)
 
@@ -1883,7 +1883,7 @@ Make it formal, structured, and policy-grade.
         st.warning("Deploying on Streamlit Cloud will not support Ollama.")
         
 # ---------------- Tab 7 - Debug ----------------
-with tabs[5]:
+with tab_debug:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Debug & Provenance</div>', unsafe_allow_html=True)
     if "last_mapping" in st.session_state:
