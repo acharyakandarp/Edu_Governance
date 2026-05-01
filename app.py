@@ -1731,14 +1731,15 @@ with tab_ai:
 
     st.write(f"Dataset ready: {df_for_report.shape[0]} rows × {df_for_report.shape[1]} columns")
 
-    # ---------------- Helpers ----------------
+    # ---------------- CLEAN OUTPUT ----------------
     def clean_llm_output(text: str) -> str:
         if not text:
             return ""
-        text = text.replace("#", "").replace("*", "").replace("```", "")
+        text = re.sub(r"[#*`]", "", text)
         text = re.sub(r"\n\s*\n", "\n\n", text)
         return text.strip()
 
+    # ---------------- PDF GENERATOR ----------------
     def generate_pdf(report_text: str):
         try:
             from reportlab.platypus import SimpleDocTemplate, Preformatted
@@ -1750,10 +1751,7 @@ with tab_ai:
             doc = SimpleDocTemplate(buffer, pagesize=letter)
             styles = getSampleStyleSheet()
 
-            story = []
-
-            # ✅ CRITICAL FIX: Preformatted preserves text correctly
-            story.append(Preformatted(report_text, styles["Normal"]))
+            story = [Preformatted(report_text, styles["Normal"])]
 
             doc.build(story)
             buffer.seek(0)
@@ -1762,175 +1760,175 @@ with tab_ai:
         except Exception:
             return None
 
-    # ---------------- Engine ----------------
+    # ---------------- POLICY ENGINE ----------------
+    def generate_policy_engine(df, adv):
+        df = df.copy()
+
+        for col in ["EVS", "Language", "Math", "infra", "ptr"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        insights = []
+        priorities = []
+
+        for _, row in df.iterrows():
+            name = str(row.get("district", "Unknown"))
+            evs = row.get("EVS")
+            infra = row.get("infra")
+            ptr = row.get("ptr")
+
+            score = 0
+            issues = []
+
+            if pd.notna(evs) and evs < 50:
+                issues.append(f"learning deficit (EVS={evs})")
+                score += 2
+
+            if pd.notna(infra) and infra < 0.4:
+                issues.append(f"infrastructure gap (infra={infra})")
+                score += 2
+
+            if pd.notna(ptr) and ptr > 35:
+                issues.append(f"teacher overload (PTR={ptr})")
+                score += 2
+
+            if issues:
+                insights.append(f"{name}: " + ", ".join(issues))
+                priorities.append((name, score))
+
+        priorities = sorted(priorities, key=lambda x: x[1], reverse=True)
+
+        return insights, priorities
+
+    # ---------------- ENGINE SELECT ----------------
     synth_choice = st.selectbox(
         "Synthesis Engine",
-        ["Local Generator", "Gemini (Cloud)", "Ollama (Local)"],
+        ["Local Intelligence Engine", "Gemini (Cloud)", "Ollama (Local)"],
         key="tab6_engine"
     )
 
+    # ---------------- ANALYSIS PREP ----------------
     stats = compute_basic_stats(df_for_report)
 
-numeric_cols = df_for_report.select_dtypes(include=[np.number]).columns.tolist()
-selected_vars = numeric_cols[:min(5, len(numeric_cols))]
+    numeric_cols = df_for_report.select_dtypes(include=[np.number]).columns.tolist()
+    selected_vars = numeric_cols[:min(5, len(numeric_cols))]
 
-adv = run_advanced_analyses(
-    df_for_report,
-    selected_vars,
-    n_pca_components=3,
-    k_clusters=3
-)
-
-payload = {
-    "stats": stats,
-    "advanced_analysis": adv
-}
-
-compact_payload = json.dumps(payload, default=str, indent=2)[:12000]
-compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
-
-generated_text = ""
-
-    # ---------------- LOCAL ----------------
-if synth_choice == "Local Generator":
-    st.success("Using deterministic policy generator.")
-
-    generated_text = (
-        "National Education System Intelligence Report\n\n"
-        "Executive Summary\n"
-        "The analysis identifies systemic disparities driven by infrastructure gaps, teacher distribution, and performance clustering.\n\n"
-        "System Diagnosis\n"
-        "Educational indicators move together, indicating systemic constraints rather than isolated issues.\n\n"
-        "Policy Direction\n"
-        "Interventions must be cluster-specific and resource-targeted.\n\n"
-        "Implementation Roadmap\n"
-        "Short term: Identify critical districts\n"
-        "Medium term: Deploy targeted interventions\n"
-        "Long term: Strengthen governance capacity\n"
+    adv = run_advanced_analyses(
+        df_for_report,
+        selected_vars,
+        n_pca_components=3,
+        k_clusters=3
     )
 
-# ---------------- GEMINI ----------------
-elif synth_choice == "Gemini (Cloud)":
-    consent = st.checkbox("Allow external API call", key="tab6_consent")
+    generated_text = ""
 
-    if consent:
-        api_key = os.getenv("GEMINI_API_KEY")
+    # ================= LOCAL ENGINE =================
+    if synth_choice == "Local Intelligence Engine":
+        st.success("Using deterministic policy intelligence engine")
 
-        if not api_key:
-            st.error("Missing GEMINI_API_KEY")
+        insights, priorities = generate_policy_engine(df_for_report, adv)
+
+        generated_text = "National Education Policy Intelligence Report\n\n"
+
+        generated_text += "Executive Summary\n"
+        generated_text += "The system exhibits structural disparities driven by infrastructure gaps, teacher load imbalance, and uneven learning outcomes across districts.\n\n"
+
+        generated_text += "District Risk Insights\n"
+        if insights:
+            generated_text += "\n".join(insights[:15]) + "\n\n"
         else:
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=api_key)
+            generated_text += "No critical district risks detected.\n\n"
 
-                model = st.selectbox(
-                    "Model",
-                    ["models/gemini-2.5-flash"],
-                    key="tab6_model"
-                )
+        generated_text += "Priority Districts\n"
+        for name, score in priorities[:5]:
+            generated_text += f"{name} (severity score: {score})\n"
 
-                if st.button("Generate AI Report", key="tab6_run"):
+        generated_text += "\nPolicy Actions\n"
+        generated_text += "Target low-infrastructure districts, reduce teacher overload, and implement cluster-specific strategies.\n"
 
-                    try:
-                        response = genai.GenerativeModel(model).generate_content(
-                            prompt,
-                            generation_config={
-                                "temperature": 0.2,
-                                "max_output_tokens": 1200
-                            }
-                        )
+    # ================= GEMINI =================
+    elif synth_choice == "Gemini (Cloud)":
+        consent = st.checkbox("Allow external API call", key="tab6_consent")
 
-                        raw = getattr(response, "text", "")
-                        generated_text = clean_llm_output(raw)
+        if consent:
+            api_key = os.getenv("GEMINI_API_KEY")
 
-                        if generated_text:
-                            st.success("AI Report Generated (Gemini)")
-                        else:
-                            raise Exception("Empty Gemini response")
+            if not api_key:
+                st.error("Missing GEMINI_API_KEY")
+            else:
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=api_key)
 
-                    except Exception as e:
-                        # 🔥 SMART FALLBACK
-                        st.warning("Gemini quota exceeded or unavailable. Switching to local intelligence engine.")
+                    model = "models/gemini-2.5-flash"
 
-                        # -------- LOCAL FALLBACK (POWERFUL) --------
-                        try:
-                            numeric_cols = df_for_report.select_dtypes(include=[np.number]).columns.tolist()
-                            selected_vars = numeric_cols[:min(5, len(numeric_cols))]
+                    if st.button("Generate AI Report", key="tab6_run"):
 
-                            adv = run_advanced_analyses(
-                                df_for_report,
-                                selected_vars,
-                                n_pca_components=3,
-                                k_clusters=3
-                            )
+                        prompt = f"""
+You are a senior government policy advisor.
 
-                            cluster_info = adv.get("kmeans", {}).get("cluster_sizes", {})
+Generate a professional policy report with:
+- Executive Summary
+- System Diagnosis
+- District Insights (with names)
+- Cluster Insights
+- Deep Recommendations
+- Implementation Roadmap
 
-                            generated_text = f"""
-National Education System Intelligence Report
+DATA:
+{json.dumps(stats, indent=2)}
 
-Executive Summary
-The system exhibits structural disparities across districts. Performance variation is driven by infrastructure, teacher distribution, and systemic clustering.
-
-System Diagnosis
-Strong correlations indicate interdependent educational outcomes rather than isolated subject weaknesses.
-
-Cluster Analysis
-Clusters identified: {cluster_info}
-
-Policy Recommendations
-1. Prioritize districts with low performance clusters
-2. Redistribute teachers where PTR is high
-3. Invest in infrastructure in weak clusters
-4. Implement cluster-specific governance strategies
-
-Implementation Roadmap
-Short term: Identify critical districts
-Medium term: Targeted intervention rollout
-Long term: System capacity strengthening
+Write in clean professional format. No symbols like # or *.
 """
 
-                            st.success("Local policy report generated (fallback mode)")
+                        try:
+                            response = genai.GenerativeModel(model).generate_content(
+                                prompt,
+                                generation_config={"temperature": 0.2}
+                            )
 
-                        except Exception as fallback_error:
-                            st.error("Both Gemini and fallback failed")
-                            st.info(str(fallback_error))
+                            raw = getattr(response, "text", "")
+                            generated_text = clean_llm_output(raw)
 
-            except Exception:
-                st.error("Gemini library not installed")
-# ---------------- OLLAMA ----------------
-else:
-    st.warning("Ollama not supported on Streamlit Cloud.")
+                            st.success("Gemini report generated")
 
-# ---------------- OUTPUT ----------------
-if generated_text:
-    st.markdown("### Policy Report Output")
-    st.text_area("Generated Report", generated_text, height=550)
+                        except Exception:
+                            st.warning("Gemini unavailable. Switching to local engine.")
 
-    pdf_bytes = generate_pdf(generated_text)
+                            insights, priorities = generate_policy_engine(df_for_report, adv)
 
-    if pdf_bytes:
-        st.download_button(
-            "Download Report as PDF",
-            data=pdf_bytes,
-            file_name="policy_report.pdf",
-            mime="application/pdf",
-            key="tab6_pdf"
-        )
+                            generated_text = "\n".join(insights[:10])
+
+                except Exception:
+                    st.error("Gemini not available")
+
+    # ================= OLLAMA =================
     else:
-        st.warning("PDF unavailable (install reportlab)")
+        st.warning("Ollama not supported on Streamlit Cloud")
 
-        st.download_button(
-            "Download Report as TXT",
-            data=generated_text,
-            file_name="policy_report.txt",
-            mime="text/plain",
-            key="tab6_txt"
-        )
+    # ================= OUTPUT =================
+    if generated_text:
+        st.markdown("### Policy Report")
+        st.text_area("Generated Report", generated_text, height=500)
 
-st.markdown('</div>', unsafe_allow_html=True)
+        pdf_bytes = generate_pdf(generated_text)
 
+        if pdf_bytes:
+            st.download_button(
+                "Download PDF",
+                data=pdf_bytes,
+                file_name="policy_report.pdf",
+                mime="application/pdf"
+            )
+        else:
+            st.download_button(
+                "Download TXT",
+                data=generated_text,
+                file_name="policy_report.txt",
+                mime="text/plain"
+            )
 
+    st.markdown('</div>', unsafe_allow_html=True)
 # ---------------- Tab 7 - Debug ----------------
 with tab_debug:
     st.markdown('<div class="card">', unsafe_allow_html=True)
