@@ -1882,7 +1882,7 @@ Make it formal, structured, and policy-grade.
         st.warning("Deploying on Streamlit Cloud will not support Ollama.")
         
 # ---------------- Tab 7 - Debug ----------------
-with tabs[6]:
+with tabs[5]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Debug & Provenance</div>', unsafe_allow_html=True)
     if "last_mapping" in st.session_state:
