@@ -1273,12 +1273,23 @@ with tabs[3]:
                         run_outlier = st.checkbox("Detect Mahalanobis multivariate outliers (report only)", value=False)
 
                     with st.expander("PCA & components", expanded=True):
-                        max_components_possible = max(1, min(6, len(cols_sel)))
+                    
                         if len(cols_sel) == 0:
                             st.warning("Please select at least one variable")
                             st.stop()
-                        n_comp = st.slider("PCA components (for diagnostics & plotting)", min_value=1, max_value=max_components_possible, value=min(2, max_components_possible))
-
+                    
+                        max_components_possible = min(6, len(cols_sel))
+                    
+                        if max_components_possible < 1:
+                            st.warning("Not enough variables for PCA")
+                            st.stop()
+                    
+                        n_comp = st.slider(
+                            "PCA components (for diagnostics & plotting)",
+                            min_value=1,
+                            max_value=max_components_possible,
+                            value=1
+                        )
                     Xvals = df_complete[cols_sel].astype(float).values
                     if log_transform:
                         Xvals = np.log1p(Xvals)
