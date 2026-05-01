@@ -1741,7 +1741,7 @@ with tab_ai:
 
     def generate_pdf(report_text: str):
         try:
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.platypus import SimpleDocTemplate, Preformatted
             from reportlab.lib.styles import getSampleStyleSheet
             from reportlab.lib.pagesizes import letter
             from io import BytesIO
@@ -1751,19 +1751,18 @@ with tab_ai:
             styles = getSampleStyleSheet()
 
             story = []
-            for line in report_text.split("\n"):
-                if line.strip():
-                    story.append(Paragraph(line, styles["Normal"]))
-                    story.append(Spacer(1, 8))
+
+            # ✅ CRITICAL FIX: Preformatted preserves text correctly
+            story.append(Preformatted(report_text, styles["Normal"]))
 
             doc.build(story)
             buffer.seek(0)
             return buffer.getvalue()
 
         except Exception:
-            return None  # Safe fallback
+            return None
 
-    # ---------------- Engine Selection ----------------
+    # ---------------- Engine ----------------
     synth_choice = st.selectbox(
         "Synthesis Engine",
         ["Local Generator", "Gemini (Cloud)", "Ollama (Local)"],
@@ -1776,24 +1775,22 @@ with tab_ai:
 
     generated_text = ""
 
-    # ---------------- LOCAL GENERATOR ----------------
+    # ---------------- LOCAL ----------------
     if synth_choice == "Local Generator":
         st.success("Using deterministic policy generator.")
 
         generated_text = (
             "National Education System Intelligence Report\n\n"
             "Executive Summary\n"
-            "The analysis reveals systemic disparities across districts driven by infrastructure gaps, "
-            "teacher distribution inefficiencies, and performance clustering.\n\n"
+            "The analysis identifies systemic disparities driven by infrastructure gaps, teacher distribution, and performance clustering.\n\n"
             "System Diagnosis\n"
-            "Strong correlations across indicators suggest that educational outcomes are structurally linked, "
-            "indicating systemic constraints rather than isolated issues.\n\n"
-            "Strategic Direction\n"
-            "Policy interventions should be cluster-specific, resource-targeted, and governance-focused.\n\n"
+            "Educational indicators move together, indicating systemic constraints rather than isolated issues.\n\n"
+            "Policy Direction\n"
+            "Interventions must be cluster-specific and resource-targeted.\n\n"
             "Implementation Roadmap\n"
             "Short term: Identify critical districts\n"
             "Medium term: Deploy targeted interventions\n"
-            "Long term: Strengthen system capacity\n"
+            "Long term: Strengthen governance capacity\n"
         )
 
     # ---------------- GEMINI ----------------
@@ -1821,27 +1818,24 @@ with tab_ai:
                         prompt = f"""
 You are a senior government policy analyst.
 
-Generate a formal education policy report.
+Write a professional policy report.
 
 STRICT RULES:
 - No markdown symbols (#, *)
-- No decorative formatting
-- Professional tone
-- Structured paragraphs
+- Clean structured paragraphs
+- Formal tone
 
 Include:
-
-1. Executive Summary
-2. System Diagnosis
-3. Structural Insights
-4. District Segmentation (mention clusters + districts)
-5. Specific Policy Recommendations
-6. Implementation Roadmap
+Executive Summary
+System Diagnosis
+District Segmentation (mention clusters and districts)
+Specific Recommendations
+Implementation Roadmap
 
 DATA:
 {compact_payload}
 
-CSV SAMPLE:
+CSV:
 {compact_csv}
 """
 
@@ -1860,7 +1854,7 @@ CSV SAMPLE:
                                 st.warning("Empty response")
 
                         except Exception as e:
-                            st.error("Gemini failed (quota or API issue)")
+                            st.error("Gemini failed (quota/API)")
                             st.info(str(e))
 
                 except Exception:
@@ -1868,7 +1862,7 @@ CSV SAMPLE:
 
     # ---------------- OLLAMA ----------------
     else:
-        st.warning("Ollama works only locally. Not supported on Streamlit Cloud.")
+        st.warning("Ollama not supported on Streamlit Cloud.")
 
     # ---------------- OUTPUT ----------------
     if generated_text:
@@ -1886,7 +1880,7 @@ CSV SAMPLE:
                 key="tab6_pdf"
             )
         else:
-            st.warning("PDF not available (install reportlab)")
+            st.warning("PDF unavailable (install reportlab)")
 
             st.download_button(
                 "Download Report as TXT",
@@ -1897,6 +1891,7 @@ CSV SAMPLE:
             )
 
     st.markdown('</div>', unsafe_allow_html=True)
+    
 # ---------------- Tab 7 - Debug ----------------
 with tab_debug:
     st.markdown('<div class="card">', unsafe_allow_html=True)
