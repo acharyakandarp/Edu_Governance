@@ -1810,13 +1810,13 @@ if synth_choice == "Local Generator":
         )
 
     # ---------------- GEMINI ----------------
-    elif synth_choice == "Gemini (Cloud)":
+        elif synth_choice == "Gemini (Cloud)":
         consent = st.checkbox("Allow external API call", key="tab6_consent")
 
         if consent:
             api_key = os.getenv("GEMINI_API_KEY")
 
-            if not api_key:
+        if not api_key:
                 st.error("Missing GEMINI_API_KEY")
             else:
                 try:
