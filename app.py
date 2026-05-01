@@ -1739,27 +1739,29 @@ with tab_ai:
         text = re.sub(r"\n\s*\n", "\n\n", text)
         return text.strip()
 
-    def generate_pdf(report_text: str) -> bytes:
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.pagesizes import letter
-        from io import BytesIO
+    def generate_pdf(report_text: str):
+        try:
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.pagesizes import letter
+            from io import BytesIO
 
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
-        styles = getSampleStyleSheet()
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            styles = getSampleStyleSheet()
 
-        story = []
-        for line in report_text.split("\n"):
-            if line.strip() == "":
-                story.append(Spacer(1, 10))
-            else:
-                story.append(Paragraph(line, styles["Normal"]))
-                story.append(Spacer(1, 8))
+            story = []
+            for line in report_text.split("\n"):
+                if line.strip():
+                    story.append(Paragraph(line, styles["Normal"]))
+                    story.append(Spacer(1, 8))
 
-        doc.build(story)
-        buffer.seek(0)
-        return buffer.getvalue()
+            doc.build(story)
+            buffer.seek(0)
+            return buffer.getvalue()
+
+        except Exception:
+            return None  # Safe fallback
 
     # ---------------- Engine Selection ----------------
     synth_choice = st.selectbox(
@@ -1769,7 +1771,7 @@ with tab_ai:
     )
 
     stats = compute_basic_stats(df_for_report)
-    compact_payload = json.dumps({"stats": stats}, indent=2)[:10000]
+    compact_payload = json.dumps({"stats": stats}, indent=2)[:8000]
     compact_csv = compact_schema_and_examples(sanitize_sample(df_for_report, 5), 5)
 
     generated_text = ""
@@ -1781,11 +1783,17 @@ with tab_ai:
         generated_text = (
             "National Education System Intelligence Report\n\n"
             "Executive Summary\n"
-            "The dataset reveals systemic disparities driven by infrastructure, teacher allocation, and performance clustering.\n\n"
+            "The analysis reveals systemic disparities across districts driven by infrastructure gaps, "
+            "teacher distribution inefficiencies, and performance clustering.\n\n"
             "System Diagnosis\n"
-            "Strong correlations indicate interconnected system constraints rather than isolated subject weaknesses.\n\n"
-            "Policy Direction\n"
-            "Interventions must be cluster-specific, resource-targeted, and governance-driven.\n"
+            "Strong correlations across indicators suggest that educational outcomes are structurally linked, "
+            "indicating systemic constraints rather than isolated issues.\n\n"
+            "Strategic Direction\n"
+            "Policy interventions should be cluster-specific, resource-targeted, and governance-focused.\n\n"
+            "Implementation Roadmap\n"
+            "Short term: Identify critical districts\n"
+            "Medium term: Deploy targeted interventions\n"
+            "Long term: Strengthen system capacity\n"
         )
 
     # ---------------- GEMINI ----------------
@@ -1810,50 +1818,41 @@ with tab_ai:
 
                     if st.button("Generate AI Report", key="tab6_run"):
 
-                        policy_prompt = f"""
+                        prompt = f"""
 You are a senior government policy analyst.
 
-Write a formal, structured education policy report.
+Generate a formal education policy report.
 
 STRICT RULES:
-- No #, *, markdown, or decorative formatting
-- No bullet overload
-- Professional tone only
-- Use structured paragraphs
+- No markdown symbols (#, *)
+- No decorative formatting
+- Professional tone
+- Structured paragraphs
 
-STRUCTURE:
+Include:
 
-Title: National Education System Intelligence Report
-
-Section 1: Executive Summary
-Section 2: System Diagnosis
-Section 3: Structural Insights (PCA if relevant)
-Section 4: District Segmentation
-    - Mention clusters
-    - Mention districts inside each cluster
-    - Describe performance patterns using data
-Section 5: Strategic Policy Recommendations
-    - Highly specific
-    - Based on data
-Section 6: Implementation Roadmap
+1. Executive Summary
+2. System Diagnosis
+3. Structural Insights
+4. District Segmentation (mention clusters + districts)
+5. Specific Policy Recommendations
+6. Implementation Roadmap
 
 DATA:
 {compact_payload}
 
 CSV SAMPLE:
 {compact_csv}
-
-Return clean professional text only.
 """
 
                         try:
                             response = genai.GenerativeModel(model).generate_content(
-                                policy_prompt,
+                                prompt,
                                 generation_config={"temperature": 0.2, "max_output_tokens": 1200}
                             )
 
-                            raw_text = getattr(response, "text", "")
-                            generated_text = clean_llm_output(raw_text)
+                            raw = getattr(response, "text", "")
+                            generated_text = clean_llm_output(raw)
 
                             if generated_text:
                                 st.success("AI Report Generated")
@@ -1861,7 +1860,7 @@ Return clean professional text only.
                                 st.warning("Empty response")
 
                         except Exception as e:
-                            st.error("Gemini failed (quota/API)")
+                            st.error("Gemini failed (quota or API issue)")
                             st.info(str(e))
 
                 except Exception:
@@ -1876,10 +1875,9 @@ Return clean professional text only.
         st.markdown("### Policy Report Output")
         st.text_area("Generated Report", generated_text, height=550)
 
-        # PDF download
-        try:
-            pdf_bytes = generate_pdf(generated_text)
+        pdf_bytes = generate_pdf(generated_text)
 
+        if pdf_bytes:
             st.download_button(
                 "Download Report as PDF",
                 data=pdf_bytes,
@@ -1887,9 +1885,16 @@ Return clean professional text only.
                 mime="application/pdf",
                 key="tab6_pdf"
             )
-        except Exception as e:
-            st.warning("PDF generation failed")
-            st.info(str(e))
+        else:
+            st.warning("PDF not available (install reportlab)")
+
+            st.download_button(
+                "Download Report as TXT",
+                data=generated_text,
+                file_name="policy_report.txt",
+                mime="text/plain",
+                key="tab6_txt"
+            )
 
     st.markdown('</div>', unsafe_allow_html=True)
 # ---------------- Tab 7 - Debug ----------------
