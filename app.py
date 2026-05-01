@@ -1272,24 +1272,37 @@ with tabs[3]:
                         log_transform = st.checkbox("Apply log(1+x) before scaling for skewed variables (optional)", value=False)
                         run_outlier = st.checkbox("Detect Mahalanobis multivariate outliers (report only)", value=False)
 
-                    with st.expander("PCA & components", expanded=True):
-                    
-                        if len(cols_sel) == 0:
-                            st.warning("Please select at least one variable")
-                            st.stop()
-                    
-                        max_components_possible = min(6, len(cols_sel))
-                    
-                        if max_components_possible < 1:
-                            st.warning("Not enough variables for PCA")
-                            st.stop()
-                    
-                        n_comp = st.slider(
-                            "PCA components (for diagnostics & plotting)",
-                            min_value=1,
-                            max_value=max_components_possible,
-                            value=1
-                        )
+        with st.expander("PCA & components", expanded=True):
+
+                    # Check columns
+                    if len(cols_sel) == 0:
+                        st.warning("Please select at least one variable")
+                        st.stop()
+                
+                    # Check data availability
+                    df_complete = df_for_analysis.dropna(subset=cols_sel)
+                
+                    n_samples = df_complete.shape[0]
+                    n_features = len(cols_sel)
+                
+                    if n_samples < 2:
+                        st.warning("Not enough data rows for PCA (need at least 2 complete rows)")
+                        st.stop()
+                
+                    # VALID PCA LIMIT
+                    max_components_possible = min(6, n_features, n_samples)
+                
+                    if max_components_possible < 1:
+                        st.warning("PCA cannot be computed with current data")
+                        st.stop()
+                
+                    # SAFE slider
+                    n_comp = st.slider(
+                        "PCA components (for diagnostics & plotting)",
+                        min_value=1,
+                        max_value=max_components_possible,
+                        value=1
+                    )
                     Xvals = df_complete[cols_sel].astype(float).values
                     if log_transform:
                         Xvals = np.log1p(Xvals)
