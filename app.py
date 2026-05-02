@@ -1602,7 +1602,7 @@ with tab_analysis:
     fig_corr = px.imshow(corr, text_auto=True, title="Correlation Matrix")
     import uuid
 
-st.plotly_chart(
+    st.plotly_chart(
     fig,
     use_container_width=True,
     key=str(uuid.uuid4())
