@@ -1789,7 +1789,7 @@ with tab_policy:
     st.dataframe(pd.DataFrame(medians).round(2))
 
         # ---------- INTELLIGENCE ----------
-        st.subheader("Cluster Intelligence")
+    st.subheader("Cluster Intelligence")
 
         for cl, size in cluster_sizes.items():
 
