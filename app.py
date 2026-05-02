@@ -1786,7 +1786,7 @@ with tab_policy:
         key=str(uuid.uuid4())
     )
 
-        st.dataframe(pd.DataFrame(medians).round(2))
+    st.dataframe(pd.DataFrame(medians).round(2))
 
         # ---------- INTELLIGENCE ----------
         st.subheader("Cluster Intelligence")
