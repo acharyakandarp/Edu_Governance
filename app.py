@@ -1791,7 +1791,7 @@ with tab_policy:
         # ---------- INTELLIGENCE ----------
     st.subheader("Cluster Intelligence")
 
-        for cl, size in cluster_sizes.items():
+    for cl, size in cluster_sizes.items():
 
             cluster_rows = result_df[result_df["_cluster"] == cl] if "_cluster" in result_df else pd.DataFrame()
 
