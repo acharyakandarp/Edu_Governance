@@ -1528,7 +1528,11 @@ with tab_analysis:
                 color="cluster",
                 title="Cluster Visualization"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"cluster_plot_{i}"
+)
 
         # -------- SAVE RESULT --------
         st.session_state["analysis_result"] = df_result
@@ -1623,7 +1627,11 @@ with tab_analysis:
             color="cluster",
             title="Cluster Visualization"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"cluster_plot_{i}"
+)
 
     # ---------------- CLUSTER PROFILE ----------------
     st.markdown("### Cluster Profiles")
@@ -1712,7 +1720,11 @@ with tab_policy:
     # ---------- DISTRIBUTION ----------
     st.subheader("Distribution Analysis")
     fig = px.box(df, y=selected_vars)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(
+    fig,
+    use_container_width=True,
+    key=f"cluster_plot_{i}"
+)
 
     # ---------- PCA ----------
     if adv and adv.get("pca"):
