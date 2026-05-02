@@ -1440,8 +1440,14 @@ with tab_analysis:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Advanced PCA & Clustering Analytics</div>', unsafe_allow_html=True)
 
-    df_for_analysis = st.session_state.get("active_df") or st.session_state.get("df_edited")
+    def safe_get_df(*keys):
+        for k in keys:
+            df = st.session_state.get(k)
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                return df
+        return None
 
+df_for_analysis = safe_get_df("active_df", "df_edited")
     if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
         st.info("No data available. Prepare dataset first.")
         st.stop()
