@@ -1440,6 +1440,7 @@ with tab_analysis:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Advanced PCA & Clustering Analytics</div>', unsafe_allow_html=True)
 
+    # -------- SAFE DATA FETCH --------
     def safe_get_df(*keys):
         for k in keys:
             df = st.session_state.get(k)
@@ -1447,28 +1448,95 @@ with tab_analysis:
                 return df
         return None
 
-df_for_analysis = safe_get_df("active_df", "df_edited")
-if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
+    df_for_analysis = safe_get_df("active_df", "df_edited")
+
+    if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
         st.info("No data available. Prepare dataset first.")
         st.stop()
 
+    # -------- NUMERIC CHECK --------
     numeric_cols = df_for_analysis.select_dtypes(include=[np.number]).columns.tolist()
 
     if not numeric_cols:
         st.warning("No numeric columns available.")
         st.stop()
 
-    cols_sel = st.multiselect("Select indicators", numeric_cols, default=numeric_cols[:3])
+    # -------- VARIABLE SELECTION --------
+    cols_sel = st.multiselect(
+        "Select indicators",
+        numeric_cols,
+        default=numeric_cols[:min(3, len(numeric_cols))],
+        key="tab4_vars"
+    )
 
     if not cols_sel:
         st.warning("Select variables.")
         st.stop()
 
+    # -------- COMPLETE CASE --------
     df_complete = df_for_analysis.dropna(subset=cols_sel)
 
     if df_complete.shape[0] < 2:
-        st.warning("Not enough data.")
+        st.warning("Not enough data after filtering.")
         st.stop()
+
+    st.success(f"Using {df_complete.shape[0]} rows for analysis")
+
+    # -------- PCA --------
+    if SKLEARN_AVAILABLE:
+        scaler = StandardScaler()
+        X = scaler.fit_transform(df_complete[cols_sel])
+
+        n_comp = min(3, len(cols_sel))
+        pca = PCA(n_components=n_comp, random_state=42)
+        pcs = pca.fit_transform(X)
+
+        exp_var = pca.explained_variance_ratio_
+
+        st.subheader("PCA Explained Variance")
+        st.write({f"PC{i+1}": round(v, 4) for i, v in enumerate(exp_var)})
+
+        loadings = pd.DataFrame(
+            pca.components_.T,
+            index=cols_sel,
+            columns=[f"PC{i+1}" for i in range(n_comp)]
+        )
+
+        st.subheader("PCA Loadings")
+        st.dataframe(loadings)
+
+        # -------- CLUSTERING --------
+        k = min(3, df_complete.shape[0])
+        km = KMeans(n_clusters=k, random_state=42, n_init=10)
+        labels = km.fit_predict(pcs)
+
+        df_result = df_complete.copy()
+        df_result["_cluster"] = labels
+
+        st.subheader("Cluster Distribution")
+        st.write(df_result["_cluster"].value_counts().to_dict())
+
+        # -------- VISUALIZATION --------
+        if pcs.shape[1] >= 2:
+            plot_df = pd.DataFrame(pcs[:, :2], columns=["PC1", "PC2"])
+            plot_df["cluster"] = labels.astype(str)
+
+            fig = px.scatter(
+                plot_df,
+                x="PC1",
+                y="PC2",
+                color="cluster",
+                title="Cluster Visualization"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -------- SAVE RESULT --------
+        st.session_state["analysis_result"] = df_result
+
+    else:
+        st.warning("Scikit-learn not available.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ---------------- PCA SETUP ----------------
     n_samples, n_features = df_complete.shape[0], len(cols_sel)
