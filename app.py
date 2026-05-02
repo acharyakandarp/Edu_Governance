@@ -1448,7 +1448,7 @@ with tab_analysis:
         return None
 
 df_for_analysis = safe_get_df("active_df", "df_edited")
-    if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
+if not isinstance(df_for_analysis, pd.DataFrame) or df_for_analysis.empty:
         st.info("No data available. Prepare dataset first.")
         st.stop()
 
