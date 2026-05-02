@@ -1566,9 +1566,9 @@ with tab_analysis:
         markers=True,
         title="Scree Plot (Variance Explained)"
     )
-   import uuid
+    import uuid
 
-st.plotly_chart(
+    st.plotly_chart(
     fig,
     use_container_width=True,
     key=str(uuid.uuid4())
