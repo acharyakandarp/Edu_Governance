@@ -4,7 +4,7 @@ Edu Governance System — Streamlit single-file (refactored UI, robust)
 Preserves PCA/clustering/reporting/synthesis features. Safe checks for optional
 clients (Gemini cloud, Ollama local). Improved aesthetics and layout.
 """
-
+import uuid
 import os
 import io
 import json
