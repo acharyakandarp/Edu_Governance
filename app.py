@@ -1763,7 +1763,7 @@ with tab_policy:
         key=str(uuid.uuid4())
     )
 
-        st.info(f"Core factor explains {round(exp[0]*100,1)}% system variance.")
+    st.info(f"Core factor explains {round(exp[0]*100,1)}% system variance.")
 
     # ---------- CLUSTERS ----------
     if adv and adv.get("kmeans"):
