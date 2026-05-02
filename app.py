@@ -1528,12 +1528,13 @@ with tab_analysis:
                 color="cluster",
                 title="Cluster Visualization"
             )
-            st.plotly_chart(
+            import uuid
+
+        st.plotly_chart(
             fig,
             use_container_width=True,
-            key=f"cluster_plot_{i}"
-)
-
+            key=str(uuid.uuid4())
+        )
         # -------- SAVE RESULT --------
         st.session_state["analysis_result"] = df_result
 
@@ -1565,7 +1566,13 @@ with tab_analysis:
         markers=True,
         title="Scree Plot (Variance Explained)"
     )
-    st.plotly_chart(fig_scree, use_container_width=True)
+   import uuid
+
+st.plotly_chart(
+    fig,
+    use_container_width=True,
+    key=str(uuid.uuid4())
+)
 
     # 📊 Cumulative variance
     cum_var = np.cumsum(exp_var)
@@ -1575,7 +1582,13 @@ with tab_analysis:
         markers=True,
         title="Cumulative Variance"
     )
-    st.plotly_chart(fig_cum, use_container_width=True)
+    import uuid
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=str(uuid.uuid4())
+    )
 
     st.dataframe(pd.DataFrame({
         "Component": range(1, len(exp_var)+1),
@@ -1587,8 +1600,13 @@ with tab_analysis:
     st.markdown("### Correlation Heatmap")
     corr = df_complete[cols_sel].corr()
     fig_corr = px.imshow(corr, text_auto=True, title="Correlation Matrix")
-    st.plotly_chart(fig_corr, use_container_width=True)
+    import uuid
 
+st.plotly_chart(
+    fig,
+    use_container_width=True,
+    key=str(uuid.uuid4())
+)
     # ---------------- OUTLIERS ----------------
     if st.checkbox("Detect Outliers"):
         z_scores = np.abs((X - X.mean(axis=0)) / X.std(axis=0))
@@ -1627,11 +1645,13 @@ with tab_analysis:
             color="cluster",
             title="Cluster Visualization"
         )
-        st.plotly_chart(
+        import uuid
+
+    st.plotly_chart(
         fig,
         use_container_width=True,
-        key=f"cluster_plot_{i}"
-)
+        key=str(uuid.uuid4())
+    )
 
     # ---------------- CLUSTER PROFILE ----------------
     st.markdown("### Cluster Profiles")
@@ -1720,11 +1740,13 @@ with tab_policy:
     # ---------- DISTRIBUTION ----------
     st.subheader("Distribution Analysis")
     fig = px.box(df, y=selected_vars)
+    import uuid
+
     st.plotly_chart(
-    fig,
-    use_container_width=True,
-    key=f"cluster_plot_{i}"
-)
+        fig,
+        use_container_width=True,
+        key=str(uuid.uuid4())
+    )
 
     # ---------- PCA ----------
     if adv and adv.get("pca"):
@@ -1733,7 +1755,13 @@ with tab_policy:
         exp = adv["pca"]["explained_variance_ratio"]
 
         fig_pca = px.bar(x=[f"PC{i+1}" for i in range(len(exp))], y=exp)
-        st.plotly_chart(fig_pca, use_container_width=True)
+        import uuid
+
+    st.plotly_chart(
+        fig_pca,
+        use_container_width=True,
+        key=str(uuid.uuid4())
+    )
 
         st.info(f"Core factor explains {round(exp[0]*100,1)}% system variance.")
 
@@ -1750,7 +1778,13 @@ with tab_policy:
         id_col = next((c for c in df.columns if "district" in c.lower()), None)
 
         fig_cluster = px.bar(x=list(cluster_sizes.keys()), y=list(cluster_sizes.values()))
-        st.plotly_chart(fig_cluster, use_container_width=True)
+        import uuid
+
+    st.plotly_chart(
+        fig_cluster,
+        use_container_width=True,
+        key=str(uuid.uuid4())
+    )
 
         st.dataframe(pd.DataFrame(medians).round(2))
 
