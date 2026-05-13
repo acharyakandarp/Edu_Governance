@@ -3784,7 +3784,9 @@ else:
     st.warning(
         "Ollama not supported on Streamlit Cloud."
     )
-    # ================= OUTPUT =================
+
+# ================= OUTPUT =================
+
 if generated_text:
 
     st.markdown(
@@ -3798,62 +3800,63 @@ if generated_text:
         height=550
     )
 
-        # ======================================
-        # PDF GENERATION
-        # ======================================
+    # ======================================
+    # PDF GENERATION
+    # ======================================
 
     pdf_bytes = None
 
     try:
 
-            pdf_bytes = generate_pdf(
-                generated_text
-            )
+        pdf_bytes = generate_pdf(
+            generated_text
+        )
 
-        except Exception as e:
+    except Exception as e:
 
-            st.warning(
-                "PDF generation failed. "
-                "TXT export enabled instead."
-            )
+        st.warning(
+            "PDF generation failed. "
+            "TXT export enabled instead."
+        )
 
-            st.info(str(e))
+        st.info(str(e))
 
-        # ======================================
-        # EXPORTS
-        # ======================================
+    # ======================================
+    # EXPORTS
+    # ======================================
 
-        export_col1, export_col2 = st.columns(2)
+    export_col1, export_col2 = st.columns(2)
 
-        with export_col1:
+    with export_col1:
 
-            if pdf_bytes:
-
-                st.download_button(
-                    "Download PDF Report",
-                    data=pdf_bytes,
-                    file_name="policy_report.pdf",
-                    mime="application/pdf",
-                    key="download_pdf_report"
-                )
-
-        with export_col2:
+        if pdf_bytes:
 
             st.download_button(
-                "Download TXT Report",
-                data=generated_text,
-                file_name="policy_report.txt",
-                mime="text/plain",
-                key="download_txt_report"
+                "Download PDF Report",
+                data=pdf_bytes,
+                file_name="policy_report.pdf",
+                mime="application/pdf",
+                key="download_pdf_report"
             )
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
+    with export_col2:
+
+        st.download_button(
+            "Download TXT Report",
+            data=generated_text,
+            file_name="policy_report.txt",
+            mime="text/plain",
+            key="download_txt_report"
+        )
+
+st.markdown(
+    '</div>',
+    unsafe_allow_html=True
+)
 
 
 # ---------------- Tab 7 - Debug ----------------
+
 with tab_debug:
 
     st.markdown(
@@ -3928,6 +3931,7 @@ with tab_debug:
 
 
 # ---------------- Footer ----------------
+
 st.markdown("---")
 
 footer_col1, footer_col2, footer_col3 = st.columns(
@@ -3956,11 +3960,13 @@ with footer_col1:
 with footer_col2:
 
     st.markdown(
-        "<div class='muted'>"
-        "If external synthesis fails, "
-        "the deterministic local policy engine "
-        "will automatically generate a report."
-        "</div>",
+        (
+            "<div class='muted'>"
+            "If external synthesis fails, "
+            "the deterministic local policy engine "
+            "will automatically generate a report."
+            "</div>"
+        ),
         unsafe_allow_html=True
     )
 
@@ -3976,4 +3982,5 @@ with footer_col3:
 
         st.info(
             "Ollama not detected"
+        )
         )
