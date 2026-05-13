@@ -1406,54 +1406,30 @@ st.markdown(
 
 k1, k2, k3, k4, k5 = st.columns(5)
 
-def render_kpi(column, value, label):
+k1.metric(
+    "Districts",
+    district_count
+)
 
-    with column:
+k2.metric(
+    "Governance Score",
+    avg_learning if avg_learning else "NA"
+)
 
-        st.markdown(
-            f"""
-            ### {value}
+k3.metric(
+    "Critical Districts",
+    risk_count
+)
 
-            {label}
-            """
-        )
+k4.metric(
+    "Avg Infrastructure",
+    avg_infra if avg_infra else "NA"
+)
 
-with k1:
-    render_kpi(
-        k1,
-        district_count,
-        "Districts"
-    )
-
-with k2:
-    render_kpi(
-        k2,
-        avg_learning if avg_learning else "NA",
-        "Governance Score"
-    )
-
-with k3:
-    render_kpi(
-        k3,
-        risk_count,
-        "Critical Districts"
-    )
-
-with k4:
-    render_kpi(
-        k4,
-        avg_infra if avg_infra else "NA",
-        "Avg Infrastructure"
-    )
-
-with k5:
-    render_kpi(
-        k5,
-        avg_ptr if avg_ptr else "NA",
-        "Avg PTR"
-    )
-
-st.markdown("---")
+k5.metric(
+    "Avg PTR",
+    avg_ptr if avg_ptr else "NA"
+)
 
 # =========================================================
 # GOVERNANCE STATUS + ALERTS
