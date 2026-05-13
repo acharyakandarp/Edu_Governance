@@ -1498,16 +1498,6 @@ tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.
     "⚙️ System Debug"
 ])
 
-tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
-    "📊 Data Ingestion",
-    "🧠 Data Preparation",
-    "🧹 Clean & Edit",
-    "📈 Statistical Analysis",
-    "🏛️ Policy Intelligence",
-    "🤖 AI Synthesis",
-    "⚙️ System Debug"
-])
-
 # ===== SIDEBAR (CONTROL PANEL) =====
 st.sidebar.markdown("## ⚙️ Control Panel")
 
