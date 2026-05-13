@@ -1492,21 +1492,17 @@ with left_panel:
 
         risk_preview = ", ".join(critical_districts[:6])
 
-        st.markdown(
-            f"""
-            <div class="alert-critical">
-                <b>Critical Governance Alert</b><br><br>
-                {risk_count} districts exhibit simultaneous
-                learning deficits, infrastructure stress,
-                and high PTR burden.<br><br>
+        st.error(
+    f"""
+Critical Governance Alert
 
-                Priority districts:
-                <b>{risk_preview}</b>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+{risk_count} districts exhibit simultaneous learning deficits,
+infrastructure stress, and high PTR burden.
 
+Priority districts:
+{risk_preview}
+"""
+)
     else:
 
         st.markdown(
