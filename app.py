@@ -1678,163 +1678,416 @@ with tab_analysis:
 with tab_policy:
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Policy Intelligence Report</div>', unsafe_allow_html=True)
 
-    # ---------- SAFE DATA FETCH ----------
+    st.markdown(
+        '<div class="section-title">Policy Intelligence & Governance Insights</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-desc">'
+        'System-level governance diagnostics, district prioritization, '
+        'risk detection, and evidence-based intervention intelligence.'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    # =========================================================
+    # SAFE DATA FETCH
+    # =========================================================
     df = st.session_state.get("active_df")
 
     if df is None or not isinstance(df, pd.DataFrame) or df.empty:
         df = st.session_state.get("cleaned_preview")
 
-    if df is None or df.empty:
-        st.error("❌ No dataset available. Please complete Data Preparation & Clean steps.")
+    if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+        st.error("No dataset available. Complete previous workflow steps first.")
         st.stop()
 
-    st.success(f"Dataset Loaded: {df.shape[0]} rows × {df.shape[1]} columns")
+    st.success(f"Dataset Ready • {df.shape[0]} districts • {df.shape[1]} variables")
 
-    # ---------- VARIABLES ----------
+    # =========================================================
+    # VARIABLE SELECTION
+    # =========================================================
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     if len(numeric_cols) < 2:
-        st.warning("At least 2 numeric columns required.")
+        st.warning("At least 2 numeric indicators required.")
         st.stop()
 
     selected_vars = st.multiselect(
-        "Select Key Indicators",
+        "Select Governance Indicators",
         numeric_cols,
-        default=numeric_cols[:3],
-        key="policy_vars"
+        default=numeric_cols[:min(5, len(numeric_cols))],
+        key="policy_intelligence_vars"
     )
 
     if len(selected_vars) < 2:
-        st.warning("Select minimum 2 indicators.")
+        st.warning("Select at least 2 indicators.")
         st.stop()
 
-    # ---------- ANALYSIS ----------
-    with st.spinner("Running system diagnostics..."):
+    # =========================================================
+    # ANALYSIS
+    # =========================================================
+    with st.spinner("Running governance intelligence engine..."):
         stats = compute_basic_stats(df)
         adv = run_advanced_analyses(df, selected_vars, 3, 3)
 
-    # ---------- EXEC SUMMARY ----------
-    st.subheader("Executive Summary")
+    # =========================================================
+    # EDUCATION HEALTH INDEX
+    # =========================================================
+    df_policy = df.copy()
 
-    means = {k: v["mean"] for k, v in stats["numeric_stats"].items() if v["mean"] is not None}
+    scaler = StandardScaler()
 
-    if means:
-        top = max(means, key=means.get)
-        low = min(means, key=means.get)
+    scaled = scaler.fit_transform(df_policy[selected_vars].fillna(
+        df_policy[selected_vars].median()
+    ))
 
-        st.info(
-            f"System imbalance detected. {top} performs strongest ({means[top]:.1f}), "
-            f"while {low} lags ({means[low]:.1f}). Indicates structural inequality."
-        )
-
-    # ---------- KPI ----------
-    st.subheader("Key Indicators")
-
-    cols = st.columns(len(selected_vars))
-    for i, var in enumerate(selected_vars):
-        val = stats["numeric_stats"][var]["mean"]
-        cols[i].metric(var, round(val, 2) if val else "NA")
-
-    # ---------- DISTRIBUTION ----------
-    st.subheader("Distribution Analysis")
-    fig = px.box(df, y=selected_vars)
-    import uuid
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True,
-        key=str(uuid.uuid4())
+    scaled_df = pd.DataFrame(
+        scaled,
+        columns=selected_vars
     )
 
-    # ---------- PCA ----------
+    # reverse PTR if exists
+    for col in scaled_df.columns:
+        if "ptr" in col.lower():
+            scaled_df[col] = scaled_df[col] * -1
+
+    df_policy["Education_Health_Index"] = (
+        scaled_df.mean(axis=1) * 20 + 50
+    ).round(2)
+
+    # =========================================================
+    # PRIORITY CLASSIFICATION
+    # =========================================================
+    def classify_priority(score):
+        if score < 35:
+            return "Critical"
+        elif score < 50:
+            return "High Priority"
+        elif score < 65:
+            return "Moderate"
+        else:
+            return "Stable"
+
+    df_policy["Priority"] = df_policy[
+        "Education_Health_Index"
+    ].apply(classify_priority)
+
+    # =========================================================
+    # RISK ENGINE
+    # =========================================================
+    risk_labels = []
+
+    for _, row in df_policy.iterrows():
+
+        risks = []
+
+        evs = row["EVS"] if "EVS" in row else None
+        infra = row["infra"] if "infra" in row else None
+        ptr = row["ptr"] if "ptr" in row else None
+        math = row["Math"] if "Math" in row else None
+        lang = row["Language"] if "Language" in row else None
+
+        if evs is not None and ptr is not None:
+            if evs < 50 and ptr > 35:
+                risks.append("Teacher Stress Risk")
+
+        if infra is not None:
+            if infra < 0.5:
+                risks.append("Infrastructure Deficit")
+
+        if math is not None and lang is not None:
+            if abs(math - lang) > 20:
+                risks.append("Learning Imbalance")
+
+        if evs is not None and evs < 45:
+            risks.append("Learning Crisis")
+
+        if not risks:
+            risks.append("Stable")
+
+        risk_labels.append(", ".join(risks))
+
+    df_policy["Policy_Risk"] = risk_labels
+
+    # =========================================================
+    # EXECUTIVE DASHBOARD
+    # =========================================================
+    st.markdown("---")
+    st.subheader("National Governance Dashboard")
+
+    k1, k2, k3, k4 = st.columns(4)
+
+    avg_ehi = round(df_policy["Education_Health_Index"].mean(), 2)
+
+    critical_count = int(
+        (df_policy["Priority"] == "Critical").sum()
+    )
+
+    high_risk = int(
+        df_policy["Policy_Risk"]
+        .str.contains("Risk|Crisis|Deficit", case=False)
+        .sum()
+    )
+
+    avg_infra = (
+        round(df_policy["infra"].mean(), 2)
+        if "infra" in df_policy.columns
+        else "NA"
+    )
+
+    k1.metric("Education Health Index", avg_ehi)
+    k2.metric("Critical Districts", critical_count)
+    k3.metric("High Risk Districts", high_risk)
+    k4.metric("Avg Infrastructure", avg_infra)
+
+    # =========================================================
+    # PRIORITY DISTRIBUTION
+    # =========================================================
+    st.markdown("---")
+    st.subheader("District Priority Classification")
+
+    priority_counts = (
+        df_policy["Priority"]
+        .value_counts()
+        .reset_index()
+    )
+
+    priority_counts.columns = ["Priority", "Count"]
+
+    fig_priority = px.bar(
+        priority_counts,
+        x="Priority",
+        y="Count",
+        color="Priority",
+        title="Priority Distribution Across Districts"
+    )
+
+    st.plotly_chart(
+        fig_priority,
+        use_container_width=True,
+        key="priority_distribution_chart"
+    )
+
+    # =========================================================
+    # TOP & BOTTOM DISTRICTS
+    # =========================================================
+    st.markdown("---")
+    st.subheader("District Performance Ranking")
+
+    district_col = next(
+        (
+            c for c in df_policy.columns
+            if "district" in c.lower()
+        ),
+        None
+    )
+
+    ranking_cols = []
+
+    if district_col:
+        ranking_cols.append(district_col)
+
+    ranking_cols += [
+        "Education_Health_Index",
+        "Priority",
+        "Policy_Risk"
+    ]
+
+    ranking_df = df_policy[ranking_cols].sort_values(
+        by="Education_Health_Index",
+        ascending=False
+    )
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("#### Top Performing Districts")
+        st.dataframe(
+            ranking_df.head(10),
+            use_container_width=True
+        )
+
+    with c2:
+        st.markdown("#### High Concern Districts")
+        st.dataframe(
+            ranking_df.tail(10),
+            use_container_width=True
+        )
+
+    # =========================================================
+    # HEATMAP
+    # =========================================================
+    st.markdown("---")
+    st.subheader("Governance Heatmap")
+
+    heatmap_df = df_policy[selected_vars].corr()
+
+    fig_heat = px.imshow(
+        heatmap_df,
+        text_auto=True,
+        aspect="auto",
+        title="Indicator Correlation Structure"
+    )
+
+    st.plotly_chart(
+        fig_heat,
+        use_container_width=True,
+        key="policy_heatmap"
+    )
+
+    # =========================================================
+    # PCA INSIGHT
+    # =========================================================
     if adv and adv.get("pca"):
-        st.subheader("Structural Drivers (PCA)")
+
+        st.markdown("---")
+        st.subheader("Structural System Intelligence")
 
         exp = adv["pca"]["explained_variance_ratio"]
 
-        fig_pca = px.bar(x=[f"PC{i+1}" for i in range(len(exp))], y=exp)
-        import uuid
+        fig_pca = px.bar(
+            x=[f"PC{i+1}" for i in range(len(exp))],
+            y=exp,
+            labels={"x": "Principal Components", "y": "Explained Variance"},
+            title="Structural Variance Distribution"
+        )
 
-    st.plotly_chart(
-        fig_pca,
-        use_container_width=True,
-        key=str(uuid.uuid4())
-    )
+        st.plotly_chart(
+            fig_pca,
+            use_container_width=True,
+            key="policy_pca_chart"
+        )
 
-    st.info(f"Core factor explains {round(exp[0]*100,1)}% system variance.")
+        st.info(
+            f"A dominant structural factor explains "
+            f"{round(exp[0]*100,1)}% of total system variance, "
+            f"indicating systemic educational inequalities."
+        )
 
-    # ---------- CLUSTERS ----------
+    # =========================================================
+    # CLUSTER INTELLIGENCE
+    # =========================================================
     if adv and adv.get("kmeans"):
 
-        st.subheader("District Segmentation")
+        st.markdown("---")
+        st.subheader("District Cluster Intelligence")
 
         cluster_sizes = adv["kmeans"]["cluster_sizes"]
-        medians = adv["kmeans"]["cluster_medians"]
 
-        result_df = pd.DataFrame(adv.get("cluster_assignments", {}))
+        result_df = pd.DataFrame(
+            adv.get("cluster_assignments", {})
+        )
 
-        id_col = next((c for c in df.columns if "district" in c.lower()), None)
+        if "_cluster" in result_df.columns:
 
-        fig_cluster = px.bar(x=list(cluster_sizes.keys()), y=list(cluster_sizes.values()))
-        import uuid
+            for cl, size in cluster_sizes.items():
 
-    st.plotly_chart(
-        fig_cluster,
-        use_container_width=True,
-        key=str(uuid.uuid4())
-    )
+                cluster_rows = result_df[
+                    result_df["_cluster"] == cl
+                ]
 
-    st.dataframe(pd.DataFrame(medians).round(2))
+                st.markdown(f"### Cluster {cl}")
 
-        # ---------- INTELLIGENCE ----------
-    st.subheader("Cluster Intelligence")
+                st.write(
+                    f"This cluster contains {size} districts "
+                    f"with similar governance and learning profiles."
+                )
 
-    for cl, size in cluster_sizes.items():
+                if district_col and district_col in cluster_rows.columns:
 
-            cluster_rows = result_df[result_df["_cluster"] == cl] if "_cluster" in result_df else pd.DataFrame()
+                    districts = (
+                        cluster_rows[district_col]
+                        .astype(str)
+                        .tolist()
+                    )
 
-            districts = (
-                cluster_rows[id_col].astype(str).tolist()
-                if id_col and id_col in cluster_rows.columns
-                else []
-            )
+                    st.write(
+                        f"Districts: {', '.join(districts)}"
+                    )
 
-            evs = medians.get("EVS", {}).get(cl)
-            ptr = medians.get("ptr", {}).get(cl)
-            infra = medians.get("infra", {}).get(cl)
+                cluster_profile = (
+                    cluster_rows[selected_vars]
+                    .median()
+                    .round(2)
+                )
 
-            st.markdown(f"### Cluster {cl} ({size} districts)")
+                st.dataframe(
+                    cluster_profile.to_frame(
+                        name="Median Value"
+                    ),
+                    use_container_width=True
+                )
 
-            if districts:
-                st.write(f"Districts: {', '.join(districts)}")
+                recommendations = []
 
-            st.write(f"EVS: {evs}, PTR: {ptr}, Infra: {infra}")
+                evs = cluster_profile.get("EVS")
+                infra = cluster_profile.get("infra")
+                ptr = cluster_profile.get("ptr")
 
-            # ---------- SAFE LOGIC ----------
-            if evs is not None and ptr is not None and evs < 50 and ptr > 35:
-                st.error("Critical Learning Deficit → Immediate teacher redistribution required")
+                if evs is not None and evs < 50:
+                    recommendations.append(
+                        "Deploy foundational learning recovery programmes "
+                        "focused on literacy and conceptual understanding."
+                    )
 
-            elif infra is not None and infra < 0.5:
-                st.warning("Infrastructure deficit → Target capital investment")
+                if ptr is not None and ptr > 35:
+                    recommendations.append(
+                        "Prioritize teacher redistribution and targeted "
+                        "faculty recruitment in high-burden districts."
+                    )
 
-            elif evs is not None and evs > 80:
-                st.success("High-performing cluster → Use as benchmark")
+                if infra is not None and infra < 0.5:
+                    recommendations.append(
+                        "Accelerate infrastructure modernization including "
+                        "digital classrooms, sanitation, and learning facilities."
+                    )
 
-            else:
-                st.info("Moderate cluster → Balanced interventions needed")
+                if not recommendations:
+                    recommendations.append(
+                        "This cluster demonstrates relatively stable performance. "
+                        "Focus on sustaining institutional quality and peer mentoring."
+                    )
 
-    # ---------- POLICY ----------
-    st.subheader("Strategic Policy Actions")
+                st.markdown("#### Strategic Recommendations")
+
+                for rec in recommendations:
+                    st.write(f"• {rec}")
+
+    # =========================================================
+    # POLICY ACTIONS
+    # =========================================================
+    st.markdown("---")
+    st.subheader("Strategic Governance Actions")
 
     st.write("""
-    - Optimize teacher allocation across districts  
-    - Target infrastructure investments selectively  
-    - Implement cluster-based governance  
-    - Enable real-time performance monitoring  
-    - Strengthen institutional capacity  
+    1. Shift from one-size-fits-all policy frameworks toward cluster-based intervention models.
+
+    2. Prioritize districts classified as Critical and High Priority for immediate funding and monitoring.
+
+    3. Introduce dynamic teacher allocation systems using PTR-based optimization.
+
+    4. Establish district-level governance dashboards for continuous monitoring of infrastructure and learning indicators.
+
+    5. Build long-term institutional resilience through leadership development, teacher training, and evidence-driven planning.
     """)
+
+    # =========================================================
+    # DOWNLOAD
+    # =========================================================
+    st.markdown("---")
+
+    csv_export = df_policy.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        "Download Governance Intelligence Dataset",
+        data=csv_export,
+        file_name="governance_intelligence_report.csv",
+        mime="text/csv",
+        key="download_policy_dataset"
+    )
 
     st.markdown('</div>', unsafe_allow_html=True)
 
