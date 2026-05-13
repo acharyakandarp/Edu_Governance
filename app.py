@@ -3883,9 +3883,7 @@ with tab_debug:
 
     if "last_mapping" in st.session_state:
 
-        st.markdown(
-            "Last mapping applied"
-        )
+        st.write("Last mapping applied")
 
         st.json(
             st.session_state["last_mapping"]
@@ -3893,9 +3891,7 @@ with tab_debug:
 
     st.markdown("---")
 
-    st.markdown(
-        "Generated synthesis/debug files"
-    )
+    st.write("Generated synthesis/debug files")
 
     dbg_files = sorted(
         glob("data/*genai*") +
@@ -3932,15 +3928,13 @@ with tab_debug:
 
                 except Exception:
 
-                    st.write(
+                    st.warning(
                         "Could not render JSON."
                     )
 
     else:
 
-        st.write(
-            "No debug files found."
-        )
+        st.info("No debug files found.")
 
     st.markdown(
         '</div>',
@@ -3976,16 +3970,12 @@ with footer_col1:
 
 with footer_col2:
 
-    footer_html = """
-    <div class='muted'>
-        If external synthesis fails,
-        the deterministic local policy engine
-        will automatically generate a report.
-    </div>
-    """
-
     st.markdown(
-        footer_html,
+        "<div class='muted'>"
+        "If external synthesis fails, "
+        "the deterministic local policy engine "
+        "will automatically generate a report."
+        "</div>",
         unsafe_allow_html=True
     )
 
@@ -4001,5 +3991,4 @@ with footer_col3:
 
         st.info(
             "Ollama not detected"
-        )  else:
-        st.info("Ollama not detected")
+        )
