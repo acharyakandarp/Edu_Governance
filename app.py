@@ -3976,14 +3976,16 @@ with footer_col1:
 
 with footer_col2:
 
-    st.markdown(
-        """
-        <div class='muted'>
+    footer_html = """
+    <div class='muted'>
         If external synthesis fails,
         the deterministic local policy engine
         will automatically generate a report.
-        </div>
-        """,
+    </div>
+    """
+
+    st.markdown(
+        footer_html,
         unsafe_allow_html=True
     )
 
