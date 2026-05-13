@@ -1108,11 +1108,13 @@ def _compose_research_style_report(stats: Dict[str, Any], adv: Optional[Dict[str
 def _choose_reporting_df() -> Optional[pd.DataFrame]:
     """
     Returns the best available DataFrame for reporting:
-    1) session_state['active_df'] if present and non-empty
-    # 2) session_state['cleaned_preview'] if present and non-empty
-    3) data/edited_dataset.csv if exists and non-empty
-    4) df_edited (global) if present and non-empty
-    5) None
+
+    Priority Order:
+    1. session_state['active_df']
+    2. session_state['cleaned_preview']
+    3. data/edited_dataset.csv
+    4. global df_edited
+    5. None
     """
     # 1) active_df
     cand = st.session_state.get("active_df", None)
