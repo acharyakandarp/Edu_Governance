@@ -3796,22 +3796,18 @@ DATA:
         )
 
     # ================= OUTPUT =================
-    if generated_text:
+if generated_text:
 
-        st.markdown(
-            """
-            <div class="section-title">
-                AI Policy Report
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    st.markdown(
+        '<div class="section-title">AI Policy Report</div>',
+        unsafe_allow_html=True
+    )
 
-        st.text_area(
-            "Generated Report",
-            generated_text,
-            height=550
-        )
+    st.text_area(
+        "Generated Report",
+        generated_text,
+        height=550
+    )
 
         # ======================================
         # PDF GENERATION
