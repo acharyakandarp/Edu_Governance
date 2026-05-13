@@ -3628,7 +3628,7 @@ with tab_ai:
 
     generated_text = ""
 
-# ================= ENGINE SELECTION =================
+    # ================= ENGINE SELECTION =================
 
 if synth_choice == "Local Generator":
 
