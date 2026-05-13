@@ -1406,62 +1406,54 @@ st.markdown(
 
 k1, k2, k3, k4, k5 = st.columns(5)
 
+def render_kpi(column, value, label):
+
+    with column:
+
+        st.markdown(
+            f"""
+            ### {value}
+
+            {label}
+            """
+        )
+
 with k1:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-value">{district_count}</div>
-            <div class="kpi-label">Districts</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    render_kpi(
+        k1,
+        district_count,
+        "Districts"
     )
 
 with k2:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-value">{avg_learning if avg_learning else "NA"}</div>
-            <div class="kpi-label">Learning Index</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    render_kpi(
+        k2,
+        avg_learning if avg_learning else "NA",
+        "Governance Score"
     )
 
 with k3:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-value">{avg_infra if avg_infra else "NA"}</div>
-            <div class="kpi-label">Infrastructure</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    render_kpi(
+        k3,
+        risk_count,
+        "Critical Districts"
     )
 
 with k4:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-value">{avg_ptr if avg_ptr else "NA"}</div>
-            <div class="kpi-label">Avg PTR</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    render_kpi(
+        k4,
+        avg_infra if avg_infra else "NA",
+        "Avg Infrastructure"
     )
 
 with k5:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-value">{risk_count}</div>
-            <div class="kpi-label">Critical Districts</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    render_kpi(
+        k5,
+        avg_ptr if avg_ptr else "NA",
+        "Avg PTR"
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("---")
 
 # =========================================================
 # GOVERNANCE STATUS + ALERTS
