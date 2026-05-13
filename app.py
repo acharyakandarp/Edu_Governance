@@ -1378,26 +1378,14 @@ else:
     health_class = "alert-critical"
 
 # =========================================================
-# DASHBOARD HEADER
+# NATIONAL GOVERNANCE DASHBOARD
 # =========================================================
 
-st.markdown(
-    """
-    <div class="section-title">
-        National Governance Dashboard
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.title("National Governance Dashboard")
 
-st.markdown(
-    """
-    <div class="section-desc">
-        Executive overview of district-level educational performance,
-        infrastructure readiness, staffing pressure, and governance risk.
-    </div>
-    """,
-    unsafe_allow_html=True
+st.caption(
+    "Executive overview of district-level educational performance, "
+    "infrastructure readiness, staffing pressure, and governance risk."
 )
 
 # =========================================================
@@ -1431,11 +1419,17 @@ k5.metric(
     avg_ptr if avg_ptr else "NA"
 )
 
+st.markdown("---")
+
 # =========================================================
-# GOVERNANCE STATUS + ALERTS
+# GOVERNANCE STATUS + INSIGHTS
 # =========================================================
 
 left_panel, right_panel = st.columns([2, 1])
+
+# ---------------------------------------------------------
+# LEFT PANEL
+# ---------------------------------------------------------
 
 with left_panel:
 
@@ -1445,12 +1439,15 @@ with left_panel:
     )
 
     if health_label == "Stable":
+
         st.success(status_text)
 
     elif health_label == "Moderate Risk":
+
         st.warning(status_text)
 
     else:
+
         st.error(status_text)
 
     if risk_count > 0:
@@ -1463,8 +1460,9 @@ with left_panel:
             f"""
 Critical Governance Alert
 
-{risk_count} districts exhibit simultaneous learning deficits,
-infrastructure stress, and high PTR burden.
+{risk_count} districts exhibit simultaneous
+learning deficits, infrastructure stress,
+and high PTR burden.
 
 Priority districts:
 {risk_preview}
@@ -1482,14 +1480,18 @@ extreme governance stress indicators.
 """
         )
 
+# ---------------------------------------------------------
+# RIGHT PANEL
+# ---------------------------------------------------------
+
 with right_panel:
 
     st.info(
         """
 Executive Insight
 
-System-level observations generated from
-current governance indicators.
+System-level observations generated
+from governance indicators.
 """
     )
 
@@ -1498,37 +1500,46 @@ current governance indicators.
     if avg_learning is not None:
 
         if avg_learning < 60:
+
             insight_lines.append(
                 "Learning outcomes indicate systemic performance stress."
             )
 
         elif avg_learning < 75:
+
             insight_lines.append(
-                "Learning outcomes are moderate but uneven."
+                "Learning outcomes remain moderate but uneven."
             )
 
         else:
+
             insight_lines.append(
                 "Overall learning performance remains comparatively strong."
             )
 
     if avg_ptr is not None and avg_ptr > 35:
+
         insight_lines.append(
             "Teacher workload pressure remains elevated."
         )
 
     if avg_infra is not None and avg_infra < 0.55:
+
         insight_lines.append(
             "Infrastructure readiness gaps remain significant."
         )
 
     if not insight_lines:
+
         insight_lines.append(
             "No major governance stress detected."
         )
 
     for txt in insight_lines:
+
         st.write("•", txt)
+
+st.markdown("---")
 
 # =========================================================
 # PERFORMANCE DISTRIBUTION
