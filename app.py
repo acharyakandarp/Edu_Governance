@@ -1109,7 +1109,7 @@ def _choose_reporting_df() -> Optional[pd.DataFrame]:
     """
     Returns the best available DataFrame for reporting:
     1) session_state['active_df'] if present and non-empty
-    2) session_state['cleaned_preview'] if present and non-empty
+    # 2) session_state['cleaned_preview'] if present and non-empty
     3) data/edited_dataset.csv if exists and non-empty
     4) df_edited (global) if present and non-empty
     5) None
