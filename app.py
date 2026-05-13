@@ -1520,19 +1520,13 @@ extreme governance stress indicators.
 
 with right_panel:
 
-    st.markdown(
+    st.info(
         """
-        <div class="card">
-            <div class="section-title" style="font-size:18px;">
-                Executive Insight
-            </div>
+Executive Insight
 
-            <div class="section-desc">
-                System-level observations generated from
-                current governance indicators.
-            </div>
-        """,
-        unsafe_allow_html=True
+System-level observations generated from
+current governance indicators.
+"""
     )
 
     insight_lines = []
@@ -1541,12 +1535,12 @@ with right_panel:
 
         if avg_learning < 60:
             insight_lines.append(
-                "Learning outcomes indicate systemic performance stress across multiple districts."
+                "Learning outcomes indicate systemic performance stress."
             )
 
         elif avg_learning < 75:
             insight_lines.append(
-                "Learning outcomes are moderate but uneven across districts."
+                "Learning outcomes are moderate but uneven."
             )
 
         else:
@@ -1556,23 +1550,21 @@ with right_panel:
 
     if avg_ptr is not None and avg_ptr > 35:
         insight_lines.append(
-            "Teacher workload pressure remains elevated in several districts."
+            "Teacher workload pressure remains elevated."
         )
 
     if avg_infra is not None and avg_infra < 0.55:
         insight_lines.append(
-            "Infrastructure readiness gaps continue to constrain system performance."
+            "Infrastructure readiness gaps remain significant."
         )
 
     if not insight_lines:
         insight_lines.append(
-            "No major systemic governance stress detected."
+            "No major governance stress detected."
         )
 
     for txt in insight_lines:
-        st.markdown(f"• {txt}")
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.write("•", txt)
 
 # =========================================================
 # PERFORMANCE DISTRIBUTION
