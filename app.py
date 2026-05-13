@@ -1505,16 +1505,14 @@ Priority districts:
 )
     else:
 
-        st.markdown(
-            """
-            <div class="alert-success">
-                <b>System Observation</b><br><br>
-                No districts currently exhibit simultaneous
-                extreme governance stress indicators.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.success(
+    """
+System Observation
+
+No districts currently exhibit simultaneous
+extreme governance stress indicators.
+"""
+)
 
 # ---------------------------------------------------------
 # RIGHT PANEL
