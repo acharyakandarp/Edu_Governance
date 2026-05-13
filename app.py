@@ -72,75 +72,78 @@ st.set_page_config(
 # =========================================================
 # GLOBAL DESIGN SYSTEM
 # =========================================================
-st.markdown("""
+
+GLOBAL_CSS = """
 <style>
 
-/* ===================================================== */
-/* ROOT */
-/* ===================================================== */
+/* =====================================================
+ROOT
+===================================================== */
 
 html, body, [class*="css"] {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     background-color: #f8fafc;
-    color: #111827;
+    color: #0f172a;
 }
 
-/* ===================================================== */
-/* MAIN APP CONTAINER */
-/* ===================================================== */
+/* =====================================================
+MAIN APP
+===================================================== */
 
 .main {
     background-color: #f8fafc;
-    padding-top: 1rem;
+    padding-top: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
-/* ===================================================== */
-/* EXECUTIVE HEADER */
-/* ===================================================== */
+/* =====================================================
+HEADERS
+===================================================== */
 
 .big-title {
-    font-size: 34px;
-    font-weight: 750;
+    font-size: 36px;
+    font-weight: 800;
     color: #0f172a;
     margin-bottom: 0px;
-    letter-spacing: -0.5px;
+    letter-spacing: -1px;
 }
 
 .subtitle {
     font-size: 15px;
     color: #475569;
     margin-top: 4px;
-    margin-bottom: 18px;
-    line-height: 1.6;
+    margin-bottom: 22px;
+    line-height: 1.7;
 }
 
-/* ===================================================== */
-/* SECTION TITLES */
-/* ===================================================== */
+/* =====================================================
+SECTIONS
+===================================================== */
 
 .section-title {
-    font-size: 28px;
-    font-weight: 750;
+    font-size: 30px;
+    font-weight: 800;
     color: #0f172a;
-    margin-bottom: 6px;
-    margin-top: 6px;
-    letter-spacing: -0.5px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    letter-spacing: -0.7px;
 }
 
 .section-desc {
     font-size: 14px;
     color: #64748b;
-    margin-bottom: 18px;
-    line-height: 1.6;
+    margin-bottom: 22px;
+    line-height: 1.8;
 }
 
-/* ===================================================== */
-/* CARD SYSTEM */
-/* ===================================================== */
+/* =====================================================
+CARDS
+===================================================== */
 
 .card {
     background: #ffffff;
-    padding: 28px;
+    padding: 30px;
     border-radius: 24px;
     border: 1px solid #e2e8f0;
     box-shadow:
@@ -149,20 +152,29 @@ html, body, [class*="css"] {
     margin-bottom: 24px;
 }
 
-/* ===================================================== */
-/* EXECUTIVE KPI CARDS */
-/* ===================================================== */
+/* =====================================================
+KPI CARDS
+===================================================== */
 
 .kpi-card {
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(
+        145deg,
+        #ffffff 0%,
+        #f8fafc 100%
+    );
+
     border-radius: 22px;
     padding: 24px;
     border: 1px solid #dbeafe;
+
     box-shadow:
         0 4px 14px rgba(37, 99, 235, 0.08),
         0 1px 3px rgba(15, 23, 42, 0.05);
+
     transition: all 0.25s ease;
-    min-height: 130px;
+
+    min-height: 135px;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -170,18 +182,19 @@ html, body, [class*="css"] {
 
 .kpi-card:hover {
     transform: translateY(-4px);
+
     box-shadow:
-        0 12px 28px rgba(37, 99, 235, 0.14),
-        0 2px 8px rgba(15, 23, 42, 0.08);
+        0 14px 32px rgba(37, 99, 235, 0.14),
+        0 3px 10px rgba(15, 23, 42, 0.08);
 }
 
 .kpi-value {
-    font-size: 36px;
+    font-size: 38px;
     font-weight: 800;
     color: #0f172a;
-    margin-bottom: 6px;
-    letter-spacing: -1px;
     line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
 }
 
 .kpi-label {
@@ -190,97 +203,149 @@ html, body, [class*="css"] {
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 1px;
-    margin-top: 4px;
 }
 
-/* ===================================================== */
-/* ALERT PANELS */
-/* ===================================================== */
+/* =====================================================
+ALERTS
+===================================================== */
 
-.alert-critical {
-    background: linear-gradient(135deg, #fef2f2, #fff1f2);
-    border-left: 6px solid #dc2626;
+.alert-success {
+    background: linear-gradient(
+        135deg,
+        #f0fdf4,
+        #ecfdf5
+    );
+
+    border-left: 6px solid #16a34a;
+
     padding: 18px;
-    border-radius: 16px;
-    color: #7f1d1d;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.06);
-    line-height: 1.7;
+    border-radius: 18px;
+
+    color: #166534;
+
+    margin-bottom: 18px;
+
+    line-height: 1.8;
+
+    box-shadow:
+        0 4px 12px rgba(22, 163, 74, 0.06);
 }
 
 .alert-warning {
-    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    background: linear-gradient(
+        135deg,
+        #fff7ed,
+        #fffbeb
+    );
+
     border-left: 6px solid #ea580c;
+
     padding: 18px;
-    border-radius: 16px;
+    border-radius: 18px;
+
     color: #9a3412;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.06);
-    line-height: 1.7;
+
+    margin-bottom: 18px;
+
+    line-height: 1.8;
+
+    box-shadow:
+        0 4px 12px rgba(234, 88, 12, 0.06);
 }
 
-.alert-success {
-    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-    border-left: 6px solid #16a34a;
+.alert-critical {
+    background: linear-gradient(
+        135deg,
+        #fef2f2,
+        #fff1f2
+    );
+
+    border-left: 6px solid #dc2626;
+
     padding: 18px;
-    border-radius: 16px;
-    color: #166534;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.06);
-    line-height: 1.7;
+    border-radius: 18px;
+
+    color: #991b1b;
+
+    margin-bottom: 18px;
+
+    line-height: 1.8;
+
+    box-shadow:
+        0 4px 12px rgba(220, 38, 38, 0.06);
 }
 
 .alert-info {
-    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    background: linear-gradient(
+        135deg,
+        #eff6ff,
+        #f0f9ff
+    );
+
     border-left: 6px solid #2563eb;
+
     padding: 18px;
-    border-radius: 16px;
+    border-radius: 18px;
+
     color: #1e40af;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
-    line-height: 1.7;
+
+    margin-bottom: 18px;
+
+    line-height: 1.8;
+
+    box-shadow:
+        0 4px 12px rgba(37, 99, 235, 0.06);
 }
 
-/* ===================================================== */
-/* STATUS BADGES */
-/* ===================================================== */
+/* =====================================================
+BADGES
+===================================================== */
 
 .badge-success {
-    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    background: linear-gradient(
+        135deg,
+        #dcfce7,
+        #bbf7d0
+    );
+
     color: #166534;
+
     padding: 6px 12px;
+
     border-radius: 999px;
+
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.3px;
 }
 
 .badge-warning {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    background: linear-gradient(
+        135deg,
+        #fef3c7,
+        #fde68a
+    );
+
     color: #92400e;
+
     padding: 6px 12px;
+
     border-radius: 999px;
+
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.3px;
 }
 
-.badge-danger {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    color: #991b1b;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-}
-
-/* ===================================================== */
-/* SIDEBAR */
-/* ===================================================== */
+/* =====================================================
+SIDEBAR
+===================================================== */
 
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    background: linear-gradient(
+        180deg,
+        #0f172a 0%,
+        #111827 100%
+    );
+
     border-right: 1px solid #1e293b;
 }
 
@@ -288,88 +353,122 @@ section[data-testid="stSidebar"] * {
     color: #f8fafc !important;
 }
 
-/* ===================================================== */
-/* BUTTONS */
-/* ===================================================== */
+/* =====================================================
+BUTTONS
+===================================================== */
 
 .stButton > button {
+
     border-radius: 12px;
-    padding: 0.7rem 1.1rem;
+
+    padding: 0.7rem 1.2rem;
+
     border: none;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #1d4ed8
+    );
+
     color: white;
+
     font-weight: 700;
+
     transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+
+    box-shadow:
+        0 4px 12px rgba(37, 99, 235, 0.15);
 }
 
 .stButton > button:hover {
-    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+
+    box-shadow:
+        0 8px 20px rgba(37, 99, 235, 0.2);
 }
 
-/* ===================================================== */
-/* INPUTS */
-/* ===================================================== */
-
-.stSelectbox,
-.stMultiselect,
-.stTextInput,
-.stNumberInput {
-    border-radius: 12px;
-}
-
-/* ===================================================== */
-/* DATAFRAMES */
-/* ===================================================== */
+/* =====================================================
+DATAFRAMES
+===================================================== */
 
 [data-testid="stDataFrame"] {
+
     border-radius: 18px;
+
     border: 1px solid #e2e8f0;
+
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+
+    box-shadow:
+        0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
-/* ===================================================== */
-/* TABS */
-/* ===================================================== */
+/* =====================================================
+METRICS
+===================================================== */
+
+[data-testid="metric-container"] {
+
+    background: linear-gradient(
+        145deg,
+        #ffffff,
+        #f8fafc
+    );
+
+    border: 1px solid #e2e8f0;
+
+    padding: 14px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 4px 12px rgba(15,23,42,0.04);
+}
+
+/* =====================================================
+TABS
+===================================================== */
 
 button[data-baseweb="tab"] {
+
     font-size: 14px;
+
     font-weight: 700;
+
     color: #475569;
+
     padding: 12px 20px;
+
     border-radius: 14px 14px 0px 0px;
+
     transition: all 0.2s ease;
 }
 
 button[data-baseweb="tab"]:hover {
+
     background: #eff6ff;
+
     color: #1d4ed8;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
-    background: linear-gradient(135deg, #ffffff, #f8fafc);
+
+    background: linear-gradient(
+        135deg,
+        #ffffff,
+        #f8fafc
+    );
+
     color: #2563eb;
+
     border-bottom: 3px solid #2563eb;
 }
 
-/* ===================================================== */
-/* METRICS */
-/* ===================================================== */
-
-[data-testid="metric-container"] {
-    background: linear-gradient(145deg, #ffffff, #f8fafc);
-    border: 1px solid #e2e8f0;
-    padding: 14px;
-    border-radius: 18px;
-    box-shadow: 0 4px 12px rgba(15,23,42,0.04);
-}
-
-/* ===================================================== */
-/* HORIZONTAL RULE */
-/* ===================================================== */
+/* =====================================================
+HORIZONTAL RULE
+===================================================== */
 
 hr {
     border: none;
@@ -377,17 +476,28 @@ hr {
     margin-top: 2rem;
     margin-bottom: 2rem;
 }
+
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(
+    GLOBAL_CSS,
+    unsafe_allow_html=True
+)
+
 
 # =========================================================
 # SYSTEM STATUS
 # =========================================================
+
 def system_status():
 
     df = st.session_state.get("active_df")
 
-    if isinstance(df, pd.DataFrame) and not df.empty:
+    if (
+        isinstance(df, pd.DataFrame)
+        and not df.empty
+    ):
 
         st.markdown(
             '<span class="badge-success">System Ready • Dataset Loaded</span>',
@@ -400,7 +510,6 @@ def system_status():
             '<span class="badge-warning">Awaiting Dataset Upload</span>',
             unsafe_allow_html=True
         )
-
 # =========================================================
 # SAFE EXCEPTION FORMATTER
 # =========================================================
