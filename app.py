@@ -150,25 +150,43 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 .kpi-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 16px;
-    padding: 18px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 10px rgba(15,23,42,0.04);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 22px;
+    padding: 24px;
+    border: 1px solid #dbeafe;
+    box-shadow:
+        0 4px 14px rgba(37, 99, 235, 0.08),
+        0 1px 3px rgba(15, 23, 42, 0.05);
+    transition: all 0.25s ease;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 12px 28px rgba(37, 99, 235, 0.14),
+        0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .kpi-value {
-    font-size: 30px;
-    font-weight: 700;
+    font-size: 36px;
+    font-weight: 800;
     color: #0f172a;
-    margin-bottom: 2px;
+    margin-bottom: 6px;
+    letter-spacing: -1px;
+    line-height: 1;
 }
 
 .kpi-label {
-    font-size: 13px;
+    font-size: 12px;
     color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 4px;
 }
 
 /* ===================================================== */
@@ -176,39 +194,47 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 .alert-critical {
-    background: #fef2f2;
-    border-left: 5px solid #dc2626;
-    padding: 14px;
-    border-radius: 10px;
-    color: #991b1b;
-    margin-bottom: 12px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+    border-left: 6px solid #dc2626;
+    padding: 20px;
+    border-radius: 18px;
+    color: #7f1d1d;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.06);
+    line-height: 1.8;
 }
 
 .alert-warning {
-    background: #fff7ed;
-    border-left: 5px solid #ea580c;
-    padding: 14px;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    border-left: 6px solid #ea580c;
+    padding: 20px;
+    border-radius: 18px;
     color: #9a3412;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.06);
+    line-height: 1.8;
 }
 
 .alert-success {
-    background: #f0fdf4;
-    border-left: 5px solid #16a34a;
-    padding: 14px;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border-left: 6px solid #16a34a;
+    padding: 20px;
+    border-radius: 18px;
     color: #166534;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.06);
+    line-height: 1.8;
 }
 
 .alert-info {
-    background: #eff6ff;
-    border-left: 5px solid #2563eb;
-    padding: 14px;
-    border-radius: 10px;
-    color: #1d4ed8;
-    margin-bottom: 12px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    border-left: 6px solid #2563eb;
+    padding: 20px;
+    border-radius: 18px;
+    color: #1e40af;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.06);
+    line-height: 1.8;
 }
 
 /* ===================================================== */
@@ -216,30 +242,33 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 .badge-success {
-    background: #dcfce7;
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
     color: #166534;
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
 .badge-warning {
-    background: #fef3c7;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
     color: #92400e;
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
 .badge-danger {
-    background: #fee2e2;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
     color: #991b1b;
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
 /* ===================================================== */
@@ -247,7 +276,7 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 section[data-testid="stSidebar"] {
-    background: #0f172a;
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
     border-right: 1px solid #1e293b;
 }
 
@@ -260,18 +289,20 @@ section[data-testid="stSidebar"] * {
 /* ===================================================== */
 
 .stButton > button {
-    border-radius: 10px;
-    padding: 0.55rem 1rem;
+    border-radius: 12px;
+    padding: 0.7rem 1.1rem;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: white;
-    font-weight: 600;
-    transition: 0.2s ease-in-out;
+    font-weight: 700;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
 }
 
 .stButton > button:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
 }
 
 /* ===================================================== */
@@ -282,7 +313,7 @@ section[data-testid="stSidebar"] * {
 .stMultiselect,
 .stTextInput,
 .stNumberInput {
-    border-radius: 10px;
+    border-radius: 12px;
 }
 
 /* ===================================================== */
@@ -290,9 +321,10 @@ section[data-testid="stSidebar"] * {
 /* ===================================================== */
 
 [data-testid="stDataFrame"] {
-    border-radius: 14px;
+    border-radius: 18px;
     border: 1px solid #e2e8f0;
     overflow: hidden;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
 /* ===================================================== */
@@ -301,15 +333,22 @@ section[data-testid="stSidebar"] * {
 
 button[data-baseweb="tab"] {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: #475569;
-    padding: 10px 18px;
-    border-radius: 10px 10px 0px 0px;
+    padding: 12px 20px;
+    border-radius: 14px 14px 0px 0px;
+    transition: all 0.2s ease;
+}
+
+button[data-baseweb="tab"]:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
-    background-color: #ffffff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     color: #2563eb;
+    border-bottom: 3px solid #2563eb;
 }
 
 /* ===================================================== */
@@ -317,11 +356,11 @@ button[data-baseweb="tab"][aria-selected="true"] {
 /* ===================================================== */
 
 [data-testid="metric-container"] {
-    background: white;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
     border: 1px solid #e2e8f0;
-    padding: 12px;
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.03);
+    padding: 14px;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.04);
 }
 
 /* ===================================================== */
@@ -331,12 +370,9 @@ button[data-baseweb="tab"][aria-selected="true"] {
 hr {
     border: none;
     border-top: 1px solid #e2e8f0;
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
 }
-
-</style>
-""", unsafe_allow_html=True)
 
 # =========================================================
 # SYSTEM STATUS
