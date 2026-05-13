@@ -118,11 +118,12 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 .section-title {
-    font-size: 24px;
-    font-weight: 650;
-    color: #111827;
-    margin-bottom: 4px;
-    margin-top: 8px;
+    font-size: 28px;
+    font-weight: 750;
+    color: #0f172a;
+    margin-bottom: 6px;
+    margin-top: 6px;
+    letter-spacing: -0.5px;
 }
 
 .section-desc {
