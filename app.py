@@ -138,11 +138,13 @@ html, body, [class*="css"] {
 
 .card {
     background: #ffffff;
-    padding: 24px;
-    border-radius: 18px;
+    padding: 28px;
+    border-radius: 24px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-    margin-bottom: 18px;
+    box-shadow:
+        0 10px 30px rgba(15, 23, 42, 0.05),
+        0 2px 8px rgba(15, 23, 42, 0.03);
+    margin-bottom: 24px;
 }
 
 /* ===================================================== */
