@@ -3802,9 +3802,9 @@ if generated_text:
         # PDF GENERATION
         # ======================================
 
-            pdf_bytes = None
+    pdf_bytes = None
 
-            try:
+    try:
 
             pdf_bytes = generate_pdf(
                 generated_text
