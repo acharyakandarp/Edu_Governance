@@ -3650,42 +3650,42 @@ with tab_ai:
         generated_text += "\nPolicy Actions\n"
         generated_text += "Target low-infrastructure districts, reduce teacher overload, and implement cluster-specific strategies.\n"
 
-    # ================= GEMINI =================
-    elif synth_choice == "Gemini (Cloud)"):
+# ================= GEMINI =================
+elif synth_choice == "Gemini (Cloud)":
 
-        consent = st.checkbox(
-            "Allow external API call",
-            key="tab6_consent"
-        )
+    consent = st.checkbox(
+        "Allow external API call",
+        key="tab6_consent"
+    )
 
-        if consent:
+    if consent:
 
-            api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
 
-            if not api_key:
+        if not api_key:
 
-                st.error("Missing GEMINI_API_KEY")
+            st.error("Missing GEMINI_API_KEY")
 
-            else:
+        else:
 
-                try:
+            try:
 
-                    import google.generativeai as genai
+                import google.generativeai as genai
 
-                    genai.configure(api_key=api_key)
+                genai.configure(api_key=api_key)
 
-                    model = "models/gemini-2.5-flash"
+                model = "models/gemini-2.5-flash"
 
-                    if st.button(
-                        "Generate AI Report",
-                        key="tab6_run"
+                if st.button(
+                    "Generate AI Report",
+                    key="tab6_run"
+                ):
+
+                    with st.spinner(
+                        "Generating AI policy synthesis..."
                     ):
 
-                        with st.spinner(
-                            "Generating AI policy synthesis..."
-                        ):
-
-                            prompt = f"""
+                        prompt = f"""
 You are a senior national education policy advisor.
 
 Generate a professional governance intelligence report.
@@ -3718,58 +3718,32 @@ DATA:
 {json.dumps(stats, indent=2)}
 """
 
-                            try:
+                        try:
 
-                                response = (
-                                    genai.GenerativeModel(model)
-                                    .generate_content(
-                                        prompt,
-                                        generation_config={
-                                            "temperature": 0.2
-                                        }
-                                    )
+                            response = (
+                                genai.GenerativeModel(model)
+                                .generate_content(
+                                    prompt,
+                                    generation_config={
+                                        "temperature": 0.2
+                                    }
                                 )
+                            )
 
-                                raw = getattr(
-                                    response,
-                                    "text",
-                                    ""
-                                )
+                            raw = getattr(
+                                response,
+                                "text",
+                                ""
+                            )
 
-                                generated_text = clean_llm_output(raw)
+                            generated_text = clean_llm_output(raw)
 
-                                if not generated_text.strip():
-
-                                    st.warning(
-                                        "Gemini returned empty output. "
-                                        "Switching to local engine."
-                                    )
-
-                                    insights, priorities = (
-                                        generate_policy_engine(
-                                            df_for_report,
-                                            adv
-                                        )
-                                    )
-
-                                    generated_text = "\n\n".join(
-                                        insights[:12]
-                                    )
-
-                                else:
-
-                                    st.success(
-                                        "Gemini report generated successfully."
-                                    )
-
-                            except Exception as e:
+                            if not generated_text.strip():
 
                                 st.warning(
-                                    "Gemini unavailable. "
-                                    "Switching to local policy engine."
+                                    "Gemini returned empty output. "
+                                    "Switching to local engine."
                                 )
-
-                                st.info(str(e))
 
                                 insights, priorities = (
                                     generate_policy_engine(
@@ -3782,13 +3756,39 @@ DATA:
                                     insights[:12]
                                 )
 
-                except Exception as e:
+                            else:
 
-                    st.error(
-                        "Gemini library unavailable."
-                    )
+                                st.success(
+                                    "Gemini report generated successfully."
+                                )
 
-                    st.info(str(e))
+                        except Exception as e:
+
+                            st.warning(
+                                "Gemini unavailable. "
+                                "Switching to local policy engine."
+                            )
+
+                            st.info(str(e))
+
+                            insights, priorities = (
+                                generate_policy_engine(
+                                    df_for_report,
+                                    adv
+                                )
+                            )
+
+                            generated_text = "\n\n".join(
+                                insights[:12]
+                            )
+
+            except Exception as e:
+
+                st.error(
+                    "Gemini library unavailable."
+                )
+
+                st.info(str(e))
 
     # ================= OLLAMA =================
     else:
