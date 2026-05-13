@@ -194,47 +194,47 @@ html, body, [class*="css"] {
 /* ===================================================== */
 
 .alert-critical {
-    background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+    background: linear-gradient(135deg, #fef2f2, #fff1f2);
     border-left: 6px solid #dc2626;
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px;
+    border-radius: 16px;
     color: #7f1d1d;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.06);
-    line-height: 1.8;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.06);
+    line-height: 1.7;
 }
 
 .alert-warning {
-    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
     border-left: 6px solid #ea580c;
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px;
+    border-radius: 16px;
     color: #9a3412;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.06);
-    line-height: 1.8;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.06);
+    line-height: 1.7;
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
     border-left: 6px solid #16a34a;
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px;
+    border-radius: 16px;
     color: #166534;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.06);
-    line-height: 1.8;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.06);
+    line-height: 1.7;
 }
 
 .alert-info {
-    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
     border-left: 6px solid #2563eb;
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px;
+    border-radius: 16px;
     color: #1e40af;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.06);
-    line-height: 1.8;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+    line-height: 1.7;
 }
 
 /* ===================================================== */
