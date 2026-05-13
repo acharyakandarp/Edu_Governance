@@ -1136,8 +1136,367 @@ with header_col3:
 
 st.markdown("---")
 
+# =========================================================
+# EXECUTIVE GOVERNANCE DASHBOARD
+# =========================================================
+
+dashboard_df = st.session_state.get("active_df")
+
+if dashboard_df is None or not isinstance(dashboard_df, pd.DataFrame) or dashboard_df.empty:
+    dashboard_df = load_sample()
+
+numeric_cols_dash = dashboard_df.select_dtypes(include=[np.number]).columns.tolist()
+
+# ---------------------------------------------------------
+# BUILD GOVERNANCE METRICS
+# ---------------------------------------------------------
+
+district_count = dashboard_df.shape[0]
+
+avg_learning = None
+if "EVS" in dashboard_df.columns and "Language" in dashboard_df.columns and "Math" in dashboard_df.columns:
+    avg_learning = round(
+        (
+            dashboard_df["EVS"].mean() +
+            dashboard_df["Language"].mean() +
+            dashboard_df["Math"].mean()
+        ) / 3,
+        1
+    )
+
+avg_infra = round(dashboard_df["infra"].mean(), 2) if "infra" in dashboard_df.columns else None
+avg_ptr = round(dashboard_df["ptr"].mean(), 1) if "ptr" in dashboard_df.columns else None
+
+# ---------------------------------------------------------
+# RISK ENGINE
+# ---------------------------------------------------------
+
+critical_districts = []
+
+if all(col in dashboard_df.columns for col in ["EVS", "infra", "ptr"]):
+
+    for _, row in dashboard_df.iterrows():
+
+        try:
+            evs = pd.to_numeric(row["EVS"], errors="coerce")
+            infra = pd.to_numeric(row["infra"], errors="coerce")
+            ptr = pd.to_numeric(row["ptr"], errors="coerce")
+
+            if pd.notna(evs) and pd.notna(infra) and pd.notna(ptr):
+
+                if evs < 50 and infra < 0.45 and ptr > 35:
+
+                    district_name = str(row.get("district", "Unknown"))
+
+                    critical_districts.append(district_name)
+
+        except Exception:
+            pass
+
+risk_count = len(critical_districts)
+
+# ---------------------------------------------------------
+# GOVERNANCE HEALTH SCORE
+# ---------------------------------------------------------
+
+health_score = 100
+
+if avg_learning is not None:
+    health_score -= max(0, (70 - avg_learning))
+
+if avg_ptr is not None:
+    health_score -= max(0, (avg_ptr - 30))
+
+if avg_infra is not None:
+    health_score -= max(0, (0.7 - avg_infra) * 100)
+
+health_score = round(max(0, min(100, health_score)), 1)
+
+if health_score >= 80:
+    health_label = "Stable"
+    health_class = "alert-success"
+
+elif health_score >= 60:
+    health_label = "Moderate Risk"
+    health_class = "alert-warning"
+
+else:
+    health_label = "Critical"
+    health_class = "alert-critical"
+
+# =========================================================
+# DASHBOARD HEADER
+# =========================================================
+
+st.markdown(
+    """
+    <div class="section-title">
+        National Governance Dashboard
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="section-desc">
+        Executive overview of district-level educational performance,
+        infrastructure readiness, staffing pressure, and governance risk.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# =========================================================
+# KPI STRIP
+# =========================================================
+
+k1, k2, k3, k4, k5 = st.columns(5)
+
+with k1:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{district_count}</div>
+            <div class="kpi-label">Districts</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with k2:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{avg_learning if avg_learning else "NA"}</div>
+            <div class="kpi-label">Learning Index</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with k3:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{avg_infra if avg_infra else "NA"}</div>
+            <div class="kpi-label">Infrastructure</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with k4:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{avg_ptr if avg_ptr else "NA"}</div>
+            <div class="kpi-label">Avg PTR</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with k5:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{risk_count}</div>
+            <div class="kpi-label">Critical Districts</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# =========================================================
+# GOVERNANCE STATUS + ALERTS
+# =========================================================
+
+left_panel, right_panel = st.columns([2, 1])
+
+# ---------------------------------------------------------
+# LEFT PANEL
+# ---------------------------------------------------------
+
+with left_panel:
+
+    st.markdown(
+        f"""
+        <div class="{health_class}">
+            <b>Governance Health Status:</b> {health_label}<br><br>
+            National Education Governance Score: <b>{health_score}/100</b>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if risk_count > 0:
+
+        risk_preview = ", ".join(critical_districts[:6])
+
+        st.markdown(
+            f"""
+            <div class="alert-critical">
+                <b>Critical Governance Alert</b><br><br>
+                {risk_count} districts exhibit simultaneous
+                learning deficits, infrastructure stress,
+                and high PTR burden.<br><br>
+
+                Priority districts:
+                <b>{risk_preview}</b>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    else:
+
+        st.markdown(
+            """
+            <div class="alert-success">
+                <b>System Observation</b><br><br>
+                No districts currently exhibit simultaneous
+                extreme governance stress indicators.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# ---------------------------------------------------------
+# RIGHT PANEL
+# ---------------------------------------------------------
+
+with right_panel:
+
+    st.markdown(
+        """
+        <div class="card">
+            <div class="section-title" style="font-size:18px;">
+                Executive Insight
+            </div>
+
+            <div class="section-desc">
+                System-level observations generated from
+                current governance indicators.
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    insight_lines = []
+
+    if avg_learning is not None:
+
+        if avg_learning < 60:
+            insight_lines.append(
+                "Learning outcomes indicate systemic performance stress across multiple districts."
+            )
+
+        elif avg_learning < 75:
+            insight_lines.append(
+                "Learning outcomes are moderate but uneven across districts."
+            )
+
+        else:
+            insight_lines.append(
+                "Overall learning performance remains comparatively strong."
+            )
+
+    if avg_ptr is not None and avg_ptr > 35:
+        insight_lines.append(
+            "Teacher workload pressure remains elevated in several districts."
+        )
+
+    if avg_infra is not None and avg_infra < 0.55:
+        insight_lines.append(
+            "Infrastructure readiness gaps continue to constrain system performance."
+        )
+
+    if not insight_lines:
+        insight_lines.append(
+            "No major systemic governance stress detected."
+        )
+
+    for txt in insight_lines:
+        st.markdown(f"• {txt}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# PERFORMANCE DISTRIBUTION
+# =========================================================
+
+if all(col in dashboard_df.columns for col in ["EVS", "Language", "Math"]):
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    vis_col1, vis_col2 = st.columns(2)
+
+    with vis_col1:
+
+        district_scores = (
+            dashboard_df[["district", "EVS", "Language", "Math"]]
+            .copy()
+        )
+
+        district_scores["Overall"] = district_scores[
+            ["EVS", "Language", "Math"]
+        ].mean(axis=1)
+
+        top_districts = district_scores.sort_values(
+            "Overall",
+            ascending=False
+        ).head(10)
+
+        fig_top = px.bar(
+            top_districts,
+            x="district",
+            y="Overall",
+            title="Top Performing Districts"
+        )
+
+        st.plotly_chart(
+            fig_top,
+            use_container_width=True,
+            key="top_districts_chart"
+        )
+
+    with vis_col2:
+
+        bottom_districts = district_scores.sort_values(
+            "Overall",
+            ascending=True
+        ).head(10)
+
+        fig_bottom = px.bar(
+            bottom_districts,
+            x="district",
+            y="Overall",
+            title="Priority Intervention Districts"
+        )
+
+        st.plotly_chart(
+            fig_bottom,
+            use_container_width=True,
+            key="bottom_districts_chart"
+        )
+
+st.markdown("---")
+
 
 # ===== WORKFLOW NAVIGATION (FINAL — ALIGNED WITH SYSTEM) =====
+
+tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
+    "📊 Data Ingestion",
+    "🧠 Data Preparation",
+    "🧹 Clean & Edit",
+    "📈 Statistical Analysis",
+    "🏛️ Policy Intelligence",
+    "🤖 AI Synthesis",
+    "⚙️ System Debug"
+])
 
 tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
     "📊 Data Ingestion",
