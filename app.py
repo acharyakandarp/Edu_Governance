@@ -3649,99 +3649,253 @@ with tab_ai:
         generated_text += "Target low-infrastructure districts, reduce teacher overload, and implement cluster-specific strategies.\n"
 
     # ================= GEMINI =================
-    elif synth_choice == "Gemini (Cloud)":
-        consent = st.checkbox("Allow external API call", key="tab6_consent")
+    elif synth_choice == "Gemini (Cloud)"):
+
+        consent = st.checkbox(
+            "Allow external API call",
+            key="tab6_consent"
+        )
 
         if consent:
+
             api_key = os.getenv("GEMINI_API_KEY")
 
             if not api_key:
+
                 st.error("Missing GEMINI_API_KEY")
+
             else:
+
                 try:
+
                     import google.generativeai as genai
+
                     genai.configure(api_key=api_key)
 
                     model = "models/gemini-2.5-flash"
 
-                    if st.button("Generate AI Report", key="tab6_run"):
+                    if st.button(
+                        "Generate AI Report",
+                        key="tab6_run"
+                    ):
 
-                        prompt = f"""
-You are a senior government policy advisor.
+                        with st.spinner(
+                            "Generating AI policy synthesis..."
+                        ):
 
-Generate a professional policy report with:
-- Executive Summary
-- System Diagnosis
-- District Insights (with names)
-- Cluster Insights
-- Deep Recommendations
-- Implementation Roadmap
+                            prompt = f"""
+You are a senior national education policy advisor.
+
+Generate a professional governance intelligence report.
+
+The report must include:
+
+Executive Summary
+
+System Diagnosis
+
+District-Level Insights with district names
+
+Cluster-Level Interpretation
+
+Governance Risk Analysis
+
+Strategic Recommendations
+
+Implementation Roadmap
+
+Requirements:
+- Write in clean professional prose
+- No markdown symbols like # or *
+- Use readable paragraphs
+- Make recommendations specific and actionable
+- Focus on governance and policy intelligence
+- Avoid generic observations
 
 DATA:
 {json.dumps(stats, indent=2)}
-
-Write in clean professional format. No symbols like # or *.
 """
 
-                        try:
-                            response = genai.GenerativeModel(model).generate_content(
-                                prompt,
-                                generation_config={"temperature": 0.2}
-                            )
+                            try:
 
-                            raw = getattr(response, "text", "")
-                            generated_text = clean_llm_output(raw)
+                                response = (
+                                    genai.GenerativeModel(model)
+                                    .generate_content(
+                                        prompt,
+                                        generation_config={
+                                            "temperature": 0.2
+                                        }
+                                    )
+                                )
 
-                            st.success("Gemini report generated")
+                                raw = getattr(
+                                    response,
+                                    "text",
+                                    ""
+                                )
 
-                        except Exception:
-                            st.warning("Gemini unavailable. Switching to local engine.")
+                                generated_text = clean_llm_output(raw)
 
-                            insights, priorities = generate_policy_engine(df_for_report, adv)
+                                if not generated_text.strip():
 
-                            generated_text = "\n".join(insights[:10])
+                                    st.warning(
+                                        "Gemini returned empty output. "
+                                        "Switching to local engine."
+                                    )
 
-                except Exception:
-                    st.error("Gemini not available")
+                                    insights, priorities = (
+                                        generate_policy_engine(
+                                            df_for_report,
+                                            adv
+                                        )
+                                    )
+
+                                    generated_text = "\n\n".join(
+                                        insights[:12]
+                                    )
+
+                                else:
+
+                                    st.success(
+                                        "Gemini report generated successfully."
+                                    )
+
+                            except Exception as e:
+
+                                st.warning(
+                                    "Gemini unavailable. "
+                                    "Switching to local policy engine."
+                                )
+
+                                st.info(str(e))
+
+                                insights, priorities = (
+                                    generate_policy_engine(
+                                        df_for_report,
+                                        adv
+                                    )
+                                )
+
+                                generated_text = "\n\n".join(
+                                    insights[:12]
+                                )
+
+                except Exception as e:
+
+                    st.error(
+                        "Gemini library unavailable."
+                    )
+
+                    st.info(str(e))
 
     # ================= OLLAMA =================
     else:
-        st.warning("Ollama not supported on Streamlit Cloud")
+
+        st.warning(
+            "Ollama not supported on Streamlit Cloud."
+        )
 
     # ================= OUTPUT =================
     if generated_text:
-        st.markdown("### Policy Report")
-        st.text_area("Generated Report", generated_text, height=500)
 
-        pdf_bytes = generate_pdf(generated_text)
+        st.markdown(
+            """
+            <div class="section-title">
+                AI Policy Report
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        if pdf_bytes:
-            st.download_button(
-                "Download PDF",
-                data=pdf_bytes,
-                file_name="policy_report.pdf",
-                mime="application/pdf"
+        st.text_area(
+            "Generated Report",
+            generated_text,
+            height=550
+        )
+
+        # ======================================
+        # PDF GENERATION
+        # ======================================
+
+        pdf_bytes = None
+
+        try:
+
+            pdf_bytes = generate_pdf(
+                generated_text
             )
-        else:
+
+        except Exception as e:
+
+            st.warning(
+                "PDF generation failed. "
+                "TXT export enabled instead."
+            )
+
+            st.info(str(e))
+
+        # ======================================
+        # EXPORTS
+        # ======================================
+
+        export_col1, export_col2 = st.columns(2)
+
+        with export_col1:
+
+            if pdf_bytes:
+
+                st.download_button(
+                    "Download PDF Report",
+                    data=pdf_bytes,
+                    file_name="policy_report.pdf",
+                    mime="application/pdf",
+                    key="download_pdf_report"
+                )
+
+        with export_col2:
+
             st.download_button(
-                "Download TXT",
+                "Download TXT Report",
                 data=generated_text,
                 file_name="policy_report.txt",
-                mime="text/plain"
+                mime="text/plain",
+                key="download_txt_report"
             )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+
 # ---------------- Tab 7 - Debug ----------------
 with tab_debug:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Debug & Provenance</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="card">',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-title">Debug & Provenance</div>',
+        unsafe_allow_html=True
+    )
 
     if "last_mapping" in st.session_state:
-        st.markdown("**Last mapping applied (provenance)**")
-        st.json(st.session_state["last_mapping"])
+
+        st.markdown(
+            "Last mapping applied"
+        )
+
+        st.json(
+            st.session_state["last_mapping"]
+        )
 
     st.markdown("---")
-    st.markdown("**Local debug files (data/)**")
+
+    st.markdown(
+        "Generated synthesis/debug files"
+    )
 
     dbg_files = sorted(
         glob("data/*genai*") +
@@ -3753,42 +3907,97 @@ with tab_debug:
     )
 
     if dbg_files:
-        st.write(f"Found {len(dbg_files)} debug files (most recent first).")
-        for fpath in dbg_files[:10]:
-            with st.expander(os.path.basename(fpath)):
-                try:
-                    with open(fpath, "r", encoding="utf-8") as fh:
-                        obj = json.load(fh)
-                    st.json(obj)
-                except Exception:
-                    st.write("Could not render JSON — open file in editor.")
-    else:
-        st.write("No debug files found yet.")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.write(
+            f"Found {len(dbg_files)} debug files."
+        )
+
+        for fpath in dbg_files[:10]:
+
+            with st.expander(
+                os.path.basename(fpath)
+            ):
+
+                try:
+
+                    with open(
+                        fpath,
+                        "r",
+                        encoding="utf-8"
+                    ) as fh:
+
+                        obj = json.load(fh)
+
+                    st.json(obj)
+
+                except Exception:
+
+                    st.write(
+                        "Could not render JSON."
+                    )
+
+    else:
+
+        st.write(
+            "No debug files found."
+        )
+
+    st.markdown(
+        '</div>',
+        unsafe_allow_html=True
+    )
 
 
 # ---------------- Footer ----------------
 st.markdown("---")
 
-footer_col1, footer_col2, footer_col3 = st.columns([1, 2, 1])
+footer_col1, footer_col2, footer_col3 = st.columns(
+    [1, 2, 1]
+)
 
 with footer_col1:
-    if st.button("Run Gemini ping test"):
+
+    if st.button(
+        "Run Gemini ping test",
+        key="gemini_ping_test_btn"
+    ):
+
         txt, meta, err = gemini_ping_test()
+
         if err:
+
             st.error(err)
+
         else:
-            st.success(f"Gemini ping OK: {txt}")
+
+            st.success(
+                f"Gemini ping OK: {txt}"
+            )
 
 with footer_col2:
+
     st.markdown(
-        "<div class='muted'>If external synthesis fails, use the deterministic report.</div>",
+        """
+        <div class='muted'>
+        If external synthesis fails,
+        the deterministic local policy engine
+        will automatically generate a report.
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
 with footer_col3:
+
     if OLLAMA_AVAILABLE:
-        st.success("Ollama available")
+
+        st.success(
+            "Ollama available"
+        )
+
     else:
+
+        st.info(
+            "Ollama not detected"
+        )  else:
         st.info("Ollama not detected")
