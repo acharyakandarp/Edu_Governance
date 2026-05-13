@@ -58,131 +58,310 @@ try:
 except Exception:
     OLLAMA_AVAILABLE = False
 
-# ---------------- GLOBAL UI & DESIGN SYSTEM ----------------
+# =========================================================
+# NATIONAL EDUCATION GOVERNANCE INTELLIGENCE PLATFORM
+# =========================================================
+
 st.set_page_config(
-    page_title="Edu Governance Intelligence Platform",
+    page_title="National Education Governance Intelligence Platform",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# =========================================================
+# GLOBAL DESIGN SYSTEM
+# =========================================================
 st.markdown("""
 <style>
 
-/* ===================== */
-/* 🎨 DESIGN SYSTEM */
-/* ===================== */
+/* ===================================================== */
+/* ROOT */
+/* ===================================================== */
 
-/* Typography */
-html, body, [class*="css"]  {
-    font-family: 'Inter', 'Source Sans Pro', sans-serif;
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: #f8fafc;
+    color: #111827;
 }
 
-/* Titles */
+/* ===================================================== */
+/* MAIN APP CONTAINER */
+/* ===================================================== */
+
+.main {
+    background-color: #f8fafc;
+    padding-top: 1rem;
+}
+
+/* ===================================================== */
+/* EXECUTIVE HEADER */
+/* ===================================================== */
+
 .big-title {
-    font-size: 30px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    color: #111827;
+    font-size: 34px;
+    font-weight: 750;
+    color: #0f172a;
+    margin-bottom: 0px;
+    letter-spacing: -0.5px;
 }
 
 .subtitle {
-    font-size: 14px;
-    color: #6b7280;
-    margin-bottom: 12px;
+    font-size: 15px;
+    color: #475569;
+    margin-top: 4px;
+    margin-bottom: 18px;
+    line-height: 1.6;
 }
 
-/* Section */
+/* ===================================================== */
+/* SECTION TITLES */
+/* ===================================================== */
+
 .section-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-size: 24px;
+    font-weight: 650;
     color: #111827;
+    margin-bottom: 4px;
+    margin-top: 8px;
 }
 
 .section-desc {
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 14px;
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 18px;
+    line-height: 1.6;
 }
 
-/* Cards */
+/* ===================================================== */
+/* CARD SYSTEM */
+/* ===================================================== */
+
 .card {
     background: #ffffff;
-    padding: 18px;
-    border-radius: 12px;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    margin-bottom: 16px;
+    padding: 24px;
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    margin-bottom: 18px;
 }
 
-/* KPI */
-.kpi {
-    font-size: 22px;
-    font-weight: 600;
-    color: #111827;
+/* ===================================================== */
+/* EXECUTIVE KPI CARDS */
+/* ===================================================== */
+
+.kpi-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15,23,42,0.04);
+}
+
+.kpi-value {
+    font-size: 30px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 2px;
 }
 
 .kpi-label {
-    font-size: 12px;
-    color: #6b7280;
+    font-size: 13px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
-/* Status Badges */
+/* ===================================================== */
+/* ALERT PANELS */
+/* ===================================================== */
+
+.alert-critical {
+    background: #fef2f2;
+    border-left: 5px solid #dc2626;
+    padding: 14px;
+    border-radius: 10px;
+    color: #991b1b;
+    margin-bottom: 12px;
+}
+
+.alert-warning {
+    background: #fff7ed;
+    border-left: 5px solid #ea580c;
+    padding: 14px;
+    border-radius: 10px;
+    color: #9a3412;
+    margin-bottom: 12px;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    border-left: 5px solid #16a34a;
+    padding: 14px;
+    border-radius: 10px;
+    color: #166534;
+    margin-bottom: 12px;
+}
+
+.alert-info {
+    background: #eff6ff;
+    border-left: 5px solid #2563eb;
+    padding: 14px;
+    border-radius: 10px;
+    color: #1d4ed8;
+    margin-bottom: 12px;
+}
+
+/* ===================================================== */
+/* STATUS BADGES */
+/* ===================================================== */
+
 .badge-success {
     background: #dcfce7;
     color: #166534;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
     font-size: 12px;
+    font-weight: 600;
 }
 
 .badge-warning {
     background: #fef3c7;
     color: #92400e;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
     font-size: 12px;
+    font-weight: 600;
 }
 
 .badge-danger {
     background: #fee2e2;
     color: #991b1b;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
     font-size: 12px;
+    font-weight: 600;
 }
 
-/* Buttons */
-.stButton>button {
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-weight: 500;
+/* ===================================================== */
+/* SIDEBAR */
+/* ===================================================== */
+
+section[data-testid="stSidebar"] {
+    background: #0f172a;
+    border-right: 1px solid #1e293b;
 }
 
-/* Inputs */
-.stSelectbox, .stMultiselect {
-    border-radius: 8px;
+section[data-testid="stSidebar"] * {
+    color: #f8fafc !important;
 }
 
-/* Dataframe */
-[data-testid="stDataFrame"] {
+/* ===================================================== */
+/* BUTTONS */
+/* ===================================================== */
+
+.stButton > button {
     border-radius: 10px;
-    border: 1px solid #e5e7eb;
+    padding: 0.55rem 1rem;
+    border: none;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+    transition: 0.2s ease-in-out;
+}
+
+.stButton > button:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+/* ===================================================== */
+/* INPUTS */
+/* ===================================================== */
+
+.stSelectbox,
+.stMultiselect,
+.stTextInput,
+.stNumberInput {
+    border-radius: 10px;
+}
+
+/* ===================================================== */
+/* DATAFRAMES */
+/* ===================================================== */
+
+[data-testid="stDataFrame"] {
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+/* ===================================================== */
+/* TABS */
+/* ===================================================== */
+
+button[data-baseweb="tab"] {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    padding: 10px 18px;
+    border-radius: 10px 10px 0px 0px;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    background-color: #ffffff;
+    color: #2563eb;
+}
+
+/* ===================================================== */
+/* METRICS */
+/* ===================================================== */
+
+[data-testid="metric-container"] {
+    background: white;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.03);
+}
+
+/* ===================================================== */
+/* HORIZONTAL RULE */
+/* ===================================================== */
+
+hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-
-# ---------------- SYSTEM STATUS ----------------
+# =========================================================
+# SYSTEM STATUS
+# =========================================================
 def system_status():
-    if "active_df" in st.session_state:
-        st.markdown('<span class="badge-success">Data Ready</span>', unsafe_allow_html=True)
+
+    df = st.session_state.get("active_df")
+
+    if isinstance(df, pd.DataFrame) and not df.empty:
+
+        st.markdown(
+            '<span class="badge-success">System Ready • Dataset Loaded</span>',
+            unsafe_allow_html=True
+        )
+
     else:
-        st.markdown('<span class="badge-warning">Awaiting Data</span>', unsafe_allow_html=True)
 
+        st.markdown(
+            '<span class="badge-warning">Awaiting Dataset Upload</span>',
+            unsafe_allow_html=True
+        )
 
-# ---------------- HELPERS ----------------
+# =========================================================
+# SAFE EXCEPTION FORMATTER
+# =========================================================
 def pretty_exception(e: Exception) -> str:
     return f"{type(e).__name__}: {str(e)}"
 
