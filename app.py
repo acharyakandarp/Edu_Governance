@@ -1747,158 +1747,518 @@ with tab_prep:
     
 # ---------------- Tab 3 - Clean & Edit ----------------
 with tab_clean:
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Clean & Edit</div>', unsafe_allow_html=True)
-    st.write("Apply mappings suggested in Extraction, edit in-grid, coerce numeric-like columns, and save/load cleaned datasets.")
 
-    # pick base df: cleaned_preview > original_df
-    base_preview = st.session_state.get("cleaned_preview", None)
-    if base_preview is None or (isinstance(base_preview, pd.DataFrame) and base_preview.empty):
-        base_preview = st.session_state.get("original_df", pd.DataFrame())
-
-    if base_preview is None or (isinstance(base_preview, pd.DataFrame) and base_preview.empty):
-        st.info("No data available. Load a dataset in Tab 1 or run extraction in Tab 2.")
-    else:
-        if "suggestions" in st.session_state:
-            st.markdown("**Manual mapping editor** — confirm or change mappings")
-            mapping_cols = []
-            for i, s in enumerate(st.session_state["suggestions"]):
-                orig = s.get("original", "")
-                suggested_role = s.get("suggested_role", orig)
-                dtype = s.get("dtype", "unknown")
-                conf = s.get("confidence", "")
-                st.write(f"**Original column:** `{orig}` — suggested `{suggested_role}` (dtype: {dtype}, conf: {conf})")
-                colA, colB = st.columns([2,1])
-                with colA:
-                    options = ["(keep original)", "state", "district", "EVS", "Language", "Math", "math_pct", "lang_pct", "evs_pct", "infra_index", "pupil_teacher_ratio", "learning_score", "(drop)"]
-                    sel = st.selectbox(f"Map `{orig}` to:", options, index=options.index(suggested_role) if suggested_role in options else 0, key=f"map_{i}")
-                with colB:
-                    new_name = st.text_input(f"Rename `{orig}` to:", value=suggested_role if sel != "(keep original)" else orig, key=f"rename_{i}")
-                mapping_cols.append((orig, sel, new_name))
-            if st.button("Apply mapping"):
-                base_df = base_preview.copy()
-                transformed = pd.DataFrame()
-                for orig, sel, new_name in mapping_cols:
-                    if sel == "(drop)":
-                        continue
-                    if orig not in base_df.columns:
-                        continue
-                    target_name = new_name.strip() if new_name else orig
-                    numeric_map = ["math_pct", "lang_pct", "infra_index", "pupil_teacher_ratio", "learning_score", "EVS", "Math", "Language", "evs_pct"]
-                    if sel in numeric_map:
-                        transformed[target_name] = pd.to_numeric(base_df[orig], errors="coerce")
-                    else:
-                        col_series = base_df[orig]
-                        try:
-                            coerced = pd.to_numeric(col_series, errors="coerce")
-                            non_na = coerced.notna().sum()
-                            total_nonblank = col_series.replace({np.nan: None}).dropna().shape[0]
-                            if total_nonblank > 0 and (non_na / max(1, total_nonblank)) >= 0.6:
-                                transformed[target_name] = coerced
-                            else:
-                                transformed[target_name] = col_series.astype(str).str.strip()
-                        except Exception:
-                            transformed[target_name] = col_series.astype(str).str.strip()
-                st.session_state["active_df"] = transformed.copy()
-                st.session_state["last_mapping"] = {"mapping": mapping_cols, "applied_at": datetime.utcnow().isoformat()}
-                st.success("Mapping applied — cleaned & mapped table loaded into the editor below.")
-        else:
-            st.info("No suggested mappings available. Use 'Extraction' to get suggestions or edit the dataset directly.")
-
-        st.markdown("### Editable grid (final review)")
-        if "active_df" in st.session_state and isinstance(st.session_state["active_df"], pd.DataFrame) and not st.session_state["active_df"].empty:
-            df_for_grid = st.session_state["active_df"].copy()
-        else:
-            df_for_grid = base_preview.copy() if isinstance(base_preview, pd.DataFrame) else pd.DataFrame()
-
-        # fallback guards
-        if df_for_grid is None:
-            df_for_grid = pd.DataFrame()
-
-       # Editable grid (fixed + safe)
-if ST_AGGRID_AVAILABLE and not df_for_grid.empty:
-    try:
-        gb = GridOptionsBuilder.from_dataframe(df_for_grid)
-        gb.configure_default_column(editable=True, groupable=True, resizable=True)
-        gb.configure_grid_options(enableRangeSelection=True, ensureDomOrder=True)
-
-        grid_options = gb.build()
-
-        grid_response = AgGrid(
-            df_for_grid,
-            gridOptions=grid_options,
-            update_mode=GridUpdateMode.MODEL_CHANGED,
-            fit_columns_on_grid_load=True,
-            enable_enterprise_modules=False,
-            allow_unsafe_jscode=False,
-        )
-
-        df_edited = pd.DataFrame(grid_response["data"])
-
-    except Exception as e:
-        st.error("AgGrid failed. Using fallback editor.")
-        df_edited = st.data_editor(
-            df_for_grid,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="fallback_editor"
-        )
-
-else:
-    df_edited = st.data_editor(
-        df_for_grid,
-        num_rows="dynamic",
-        use_container_width=True,
-        key="default_editor"
+    st.markdown(
+        '<div class="section-title">Clean & Edit</div>',
+        unsafe_allow_html=True
     )
-def safe_data_editor(df: pd.DataFrame, key: str):
-    try:
-        return st.data_editor(
-            df,
-            num_rows="dynamic",
-            use_container_width=True,
-            key=key
+
+    st.markdown(
+        """
+        <div class="section-desc">
+        Validate mappings, clean datasets, edit values interactively,
+        and prepare a governance-ready analytical dataset.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # =====================================================
+    # LOAD BASE DATAFRAME
+    # =====================================================
+
+    base_preview = st.session_state.get("cleaned_preview")
+
+    if (
+        base_preview is None or
+        not isinstance(base_preview, pd.DataFrame) or
+        base_preview.empty
+    ):
+        base_preview = st.session_state.get(
+            "original_df",
+            pd.DataFrame()
         )
-    except Exception:
-        return st.dataframe(df)
-    
-# Ensure df_edited always valid
-if not isinstance(df_edited, pd.DataFrame):
-    df_edited = pd.DataFrame(df_for_grid)
 
+    if (
+        base_preview is None or
+        not isinstance(base_preview, pd.DataFrame) or
+        base_preview.empty
+    ):
+        st.warning(
+            "No dataset available. Complete previous workflow steps first."
+        )
+        st.stop()
 
-def coerce_numeric_like_columns(df: pd.DataFrame, threshold: float = 0.6) -> pd.DataFrame:
-    df = df.copy()
-    for col in df.columns:
-        series = df[col]
+    # =====================================================
+    # DATASET STATUS
+    # =====================================================
 
-        if pd.api.types.is_numeric_dtype(series):
-            continue
+    st.success(
+        f"Dataset Ready • {base_preview.shape[0]} rows • "
+        f"{base_preview.shape[1]} columns"
+    )
 
-        coerced = pd.to_numeric(series, errors="coerce")
-        non_na = coerced.notna().sum()
-        total_nonblank = series.replace({np.nan: None}).dropna().shape[0]
+    # =====================================================
+    # SCHEMA MAPPING SECTION
+    # =====================================================
 
-        if total_nonblank > 0 and (non_na / total_nonblank) >= threshold:
-            df[col] = coerced
+    if "suggestions" in st.session_state:
 
-    return df
+        st.markdown("---")
 
+        st.subheader("Schema Mapping & Standardization")
 
-# Apply coercion safely
-if isinstance(df_edited, pd.DataFrame):
-    df_edited = coerce_numeric_like_columns(df_edited, threshold=0.6)
+        st.markdown(
+            """
+            Confirm or modify automatically detected schema mappings.
+            Standardized mappings improve downstream analytics quality.
+            """
+        )
+
+        mapping_cols = []
+
+        for i, s in enumerate(st.session_state["suggestions"]):
+
+            orig = s.get("original", "")
+            suggested_role = s.get("suggested_role", orig)
+            dtype = s.get("dtype", "unknown")
+            conf = s.get("confidence", "")
+
+            st.markdown(
+                f"""
+                <div class="alert-info">
+                    <b>Detected Column:</b> {orig}<br>
+                    Suggested Role: <b>{suggested_role}</b><br>
+                    Data Type: {dtype}<br>
+                    Confidence: {conf}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            colA, colB = st.columns([2, 1])
+
+            with colA:
+
+                options = [
+                    "(keep original)",
+                    "state",
+                    "district",
+                    "EVS",
+                    "Language",
+                    "Math",
+                    "math_pct",
+                    "lang_pct",
+                    "evs_pct",
+                    "infra",
+                    "ptr",
+                    "learning_score",
+                    "(drop)"
+                ]
+
+                default_idx = (
+                    options.index(suggested_role)
+                    if suggested_role in options
+                    else 0
+                )
+
+                sel = st.selectbox(
+                    f"Map `{orig}` to:",
+                    options,
+                    index=default_idx,
+                    key=f"map_{i}"
+                )
+
+            with colB:
+
+                new_name = st.text_input(
+                    f"Rename `{orig}`",
+                    value=(
+                        suggested_role
+                        if sel != "(keep original)"
+                        else orig
+                    ),
+                    key=f"rename_{i}"
+                )
+
+            mapping_cols.append((orig, sel, new_name))
+
+        # =================================================
+        # APPLY MAPPINGS
+        # =================================================
+
+        if st.button(
+            "Apply Mapping & Standardization",
+            key="apply_mapping_btn"
+        ):
+
+            base_df = base_preview.copy()
+
+            transformed = pd.DataFrame()
+
+            numeric_map = [
+                "math_pct",
+                "lang_pct",
+                "infra",
+                "ptr",
+                "learning_score",
+                "EVS",
+                "Math",
+                "Language",
+                "evs_pct"
+            ]
+
+            for orig, sel, new_name in mapping_cols:
+
+                if sel == "(drop)":
+                    continue
+
+                if orig not in base_df.columns:
+                    continue
+
+                target_name = (
+                    new_name.strip()
+                    if new_name
+                    else orig
+                )
+
+                if sel in numeric_map:
+
+                    transformed[target_name] = pd.to_numeric(
+                        base_df[orig],
+                        errors="coerce"
+                    )
+
+                else:
+
+                    col_series = base_df[orig]
+
+                    try:
+
+                        coerced = pd.to_numeric(
+                            col_series,
+                            errors="coerce"
+                        )
+
+                        non_na = coerced.notna().sum()
+
+                        total_nonblank = (
+                            col_series
+                            .replace({np.nan: None})
+                            .dropna()
+                            .shape[0]
+                        )
+
+                        if (
+                            total_nonblank > 0 and
+                            (non_na / max(1, total_nonblank)) >= 0.6
+                        ):
+                            transformed[target_name] = coerced
+
+                        else:
+                            transformed[target_name] = (
+                                col_series
+                                .astype(str)
+                                .str.strip()
+                            )
+
+                    except Exception:
+
+                        transformed[target_name] = (
+                            col_series
+                            .astype(str)
+                            .str.strip()
+                        )
+
+            st.session_state["active_df"] = transformed.copy()
+
+            st.session_state["last_mapping"] = {
+                "mapping": mapping_cols,
+                "applied_at": datetime.utcnow().isoformat()
+            }
+
+            st.success(
+                "Schema mapping successfully applied."
+            )
+
+    else:
+
+        st.info(
+            "No schema suggestions available. "
+            "Run Data Preparation step first."
+        )
+
+    # =====================================================
+    # LOAD ACTIVE DATA
+    # =====================================================
+
+    st.markdown("---")
+    st.subheader("Interactive Dataset Editor")
+
+    if (
+        "active_df" in st.session_state and
+        isinstance(st.session_state["active_df"], pd.DataFrame) and
+        not st.session_state["active_df"].empty
+    ):
+
+        df_for_grid = st.session_state["active_df"].copy()
+
+    else:
+
+        df_for_grid = (
+            base_preview.copy()
+            if isinstance(base_preview, pd.DataFrame)
+            else pd.DataFrame()
+        )
+
+    if df_for_grid is None:
+        df_for_grid = pd.DataFrame()
+
+    # =====================================================
+    # SAFE DATA EDITOR
+    # =====================================================
+
+    def safe_data_editor(df: pd.DataFrame, key: str):
+
+        try:
+
+            return st.data_editor(
+                df,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=key
+            )
+
+        except Exception:
+
+            st.warning(
+                "Advanced editor unavailable. "
+                "Using dataframe fallback."
+            )
+
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+            return df
+
+    # =====================================================
+    # AGGRID / DATA EDITOR
+    # =====================================================
+
+    if (
+        ST_AGGRID_AVAILABLE and
+        not df_for_grid.empty
+    ):
+
+        try:
+
+            gb = GridOptionsBuilder.from_dataframe(df_for_grid)
+
+            gb.configure_default_column(
+                editable=True,
+                groupable=True,
+                resizable=True
+            )
+
+            gb.configure_grid_options(
+                enableRangeSelection=True,
+                ensureDomOrder=True
+            )
+
+            grid_options = gb.build()
+
+            grid_response = AgGrid(
+                df_for_grid,
+                gridOptions=grid_options,
+                update_mode=GridUpdateMode.MODEL_CHANGED,
+                fit_columns_on_grid_load=True,
+                enable_enterprise_modules=False,
+                allow_unsafe_jscode=False
+            )
+
+            df_edited = pd.DataFrame(
+                grid_response["data"]
+            )
+
+        except Exception as e:
+
+            st.warning(
+                "AgGrid unavailable. "
+                "Using fallback editor."
+            )
+
+            st.info(pretty_exception(e))
+
+            df_edited = safe_data_editor(
+                df_for_grid,
+                key="fallback_editor"
+            )
+
+    else:
+
+        df_edited = safe_data_editor(
+            df_for_grid,
+            key="default_editor"
+        )
+
+    # =====================================================
+    # VALIDATE EDITED DATA
+    # =====================================================
+
+    if not isinstance(df_edited, pd.DataFrame):
+        df_edited = pd.DataFrame(df_for_grid)
+
+    # =====================================================
+    # AUTO NUMERIC COERCION
+    # =====================================================
+
+    def coerce_numeric_like_columns(
+        df: pd.DataFrame,
+        threshold: float = 0.6
+    ) -> pd.DataFrame:
+
+        df = df.copy()
+
+        for col in df.columns:
+
+            series = df[col]
+
+            if pd.api.types.is_numeric_dtype(series):
+                continue
+
+            coerced = pd.to_numeric(
+                series,
+                errors="coerce"
+            )
+
+            non_na = coerced.notna().sum()
+
+            total_nonblank = (
+                series
+                .replace({np.nan: None})
+                .dropna()
+                .shape[0]
+            )
+
+            if (
+                total_nonblank > 0 and
+                (non_na / total_nonblank) >= threshold
+            ):
+                df[col] = coerced
+
+        return df
+
+    # =====================================================
+    # APPLY CLEANING
+    # =====================================================
+
+    df_edited = coerce_numeric_like_columns(
+        df_edited,
+        threshold=0.6
+    )
+
     st.session_state["df_edited"] = df_edited.copy()
 
+    # =====================================================
+    # PREVIEW
+    # =====================================================
 
-# Preview section
-st.markdown("#### Preview (first 10 rows)")
+    st.markdown("---")
+    st.subheader("Cleaned Dataset Preview")
 
-if isinstance(df_edited, pd.DataFrame) and not df_edited.empty:
-    st.dataframe(df_edited.head(10), use_container_width=True)
-else:
-    st.info("Grid is empty. Fill rows or upload a dataset.")
+    st.dataframe(
+        df_edited.head(15),
+        use_container_width=True
+    )
 
+    # =====================================================
+    # DATA QUALITY SUMMARY
+    # =====================================================
+
+    st.markdown("---")
+    st.subheader("Data Quality Diagnostics")
+
+    q1, q2, q3 = st.columns(3)
+
+    missing_cells = int(df_edited.isna().sum().sum())
+
+    numeric_cols = (
+        df_edited
+        .select_dtypes(include=[np.number])
+        .columns
+        .tolist()
+    )
+
+    q1.metric(
+        "Rows",
+        df_edited.shape[0]
+    )
+
+    q2.metric(
+        "Numeric Columns",
+        len(numeric_cols)
+    )
+
+    q3.metric(
+        "Missing Cells",
+        missing_cells
+    )
+
+    # =====================================================
+    # EXPORT CONTROLS
+    # =====================================================
+
+    st.markdown("---")
+    st.subheader("Dataset Persistence")
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+
+        if st.button(
+            "Save Cleaned Dataset",
+            key="save_cleaned_dataset"
+        ):
+
+            try:
+
+                os.makedirs("data", exist_ok=True)
+
+                df_edited.to_csv(
+                    "data/edited_dataset.csv",
+                    index=False
+                )
+
+                st.success(
+                    "Dataset saved successfully."
+                )
+
+            except Exception as e:
+
+                st.error(
+                    "Save failed: "
+                    + pretty_exception(e)
+                )
+
+    with c2:
+
+        csv_export = df_edited.to_csv(
+            index=False
+        ).encode("utf-8")
+
+        st.download_button(
+            "Download Cleaned Dataset",
+            data=csv_export,
+            file_name="cleaned_dataset.csv",
+            mime="text/csv",
+            key="download_cleaned_dataset"
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Action buttons
 c1, c2, c3 = st.columns(3)
