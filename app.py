@@ -1437,10 +1437,6 @@ k5.metric(
 
 left_panel, right_panel = st.columns([2, 1])
 
-# ---------------------------------------------------------
-# LEFT PANEL
-# ---------------------------------------------------------
-
 with left_panel:
 
     status_text = (
@@ -1448,20 +1444,23 @@ with left_panel:
         f"National Education Governance Score: {health_score}/100"
     )
 
-    if health_class == "alert-success":
+    if health_label == "Stable":
         st.success(status_text)
 
-    elif health_class == "alert-warning":
+    elif health_label == "Moderate Risk":
         st.warning(status_text)
 
     else:
         st.error(status_text)
+
     if risk_count > 0:
 
-        risk_preview = ", ".join(critical_districts[:6])
+        risk_preview = ", ".join(
+            critical_districts[:6]
+        )
 
         st.error(
-    f"""
+            f"""
 Critical Governance Alert
 
 {risk_count} districts exhibit simultaneous learning deficits,
@@ -1470,21 +1469,18 @@ infrastructure stress, and high PTR burden.
 Priority districts:
 {risk_preview}
 """
-)
+        )
+
     else:
 
         st.success(
-    """
+            """
 System Observation
 
 No districts currently exhibit simultaneous
 extreme governance stress indicators.
 """
-)
-
-# ---------------------------------------------------------
-# RIGHT PANEL
-# ---------------------------------------------------------
+        )
 
 with right_panel:
 
