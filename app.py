@@ -3626,31 +3626,27 @@ with tab_ai:
 
     generated_text = ""
 
-    # ================= LOCAL ENGINE =================
-    if synth_choice == "Local Intelligence Engine":
-        st.success("Using deterministic policy intelligence engine")
+    generated_text = ""
 
-        insights, priorities = generate_policy_engine(df_for_report, adv)
+# ================= ENGINE SELECTION =================
 
-        generated_text = "National Education Policy Intelligence Report\n\n"
+if synth_choice == "Local Generator":
 
-        generated_text += "Executive Summary\n"
-        generated_text += "The system exhibits structural disparities driven by infrastructure gaps, teacher load imbalance, and uneven learning outcomes across districts.\n\n"
+    st.success(
+        "Using deterministic local policy engine."
+    )
 
-        generated_text += "District Risk Insights\n"
-        if insights:
-            generated_text += "\n".join(insights[:15]) + "\n\n"
-        else:
-            generated_text += "No critical district risks detected.\n\n"
+    insights, priorities = generate_policy_engine(
+        df_for_report,
+        adv
+    )
 
-        generated_text += "Priority Districts\n"
-        for name, score in priorities[:5]:
-            generated_text += f"{name} (severity score: {score})\n"
-
-        generated_text += "\nPolicy Actions\n"
-        generated_text += "Target low-infrastructure districts, reduce teacher overload, and implement cluster-specific strategies.\n"
+    generated_text = "\n\n".join(
+        insights[:12]
+    )
 
 # ================= GEMINI =================
+
 elif synth_choice == "Gemini (Cloud)":
 
     consent = st.checkbox(
@@ -3672,7 +3668,9 @@ elif synth_choice == "Gemini (Cloud)":
 
                 import google.generativeai as genai
 
-                genai.configure(api_key=api_key)
+                genai.configure(
+                    api_key=api_key
+                )
 
                 model = "models/gemini-2.5-flash"
 
@@ -3690,29 +3688,17 @@ You are a senior national education policy advisor.
 
 Generate a professional governance intelligence report.
 
-The report must include:
+Include:
+- Executive Summary
+- System Diagnosis
+- District Insights
+- Cluster Insights
+- Governance Risks
+- Strategic Recommendations
+- Implementation Roadmap
 
-Executive Summary
-
-System Diagnosis
-
-District-Level Insights with district names
-
-Cluster-Level Interpretation
-
-Governance Risk Analysis
-
-Strategic Recommendations
-
-Implementation Roadmap
-
-Requirements:
-- Write in clean professional prose
-- No markdown symbols like # or *
-- Use readable paragraphs
-- Make recommendations specific and actionable
-- Focus on governance and policy intelligence
-- Avoid generic observations
+Use professional readable language.
+Avoid markdown symbols like # and *.
 
 DATA:
 {json.dumps(stats, indent=2)}
@@ -3736,13 +3722,14 @@ DATA:
                                 ""
                             )
 
-                            generated_text = clean_llm_output(raw)
+                            generated_text = (
+                                clean_llm_output(raw)
+                            )
 
                             if not generated_text.strip():
 
                                 st.warning(
-                                    "Gemini returned empty output. "
-                                    "Switching to local engine."
+                                    "Gemini returned empty response."
                                 )
 
                                 insights, priorities = (
@@ -3759,14 +3746,14 @@ DATA:
                             else:
 
                                 st.success(
-                                    "Gemini report generated successfully."
+                                    "Gemini report generated."
                                 )
 
                         except Exception as e:
 
                             st.warning(
                                 "Gemini unavailable. "
-                                "Switching to local policy engine."
+                                "Using local engine."
                             )
 
                             st.info(str(e))
@@ -3790,13 +3777,13 @@ DATA:
 
                 st.info(str(e))
 
-    # ================= OLLAMA =================
-    else:
+# ================= OLLAMA =================
 
-        st.warning(
-            "Ollama not supported on Streamlit Cloud."
-        )
+else:
 
+    st.warning(
+        "Ollama not supported on Streamlit Cloud."
+    )
     # ================= OUTPUT =================
 if generated_text:
 
