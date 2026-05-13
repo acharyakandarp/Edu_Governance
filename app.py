@@ -1475,16 +1475,19 @@ left_panel, right_panel = st.columns([2, 1])
 
 with left_panel:
 
-    st.markdown(
-        f"""
-        <div class="{health_class}">
-            <b>Governance Health Status:</b> {health_label}<br><br>
-            National Education Governance Score: <b>{health_score}/100</b>
-        </div>
-        """,
-        unsafe_allow_html=True
+    status_text = (
+        f"Governance Health Status: {health_label}\n\n"
+        f"National Education Governance Score: {health_score}/100"
     )
 
+    if health_class == "alert-success":
+        st.success(status_text)
+
+    elif health_class == "alert-warning":
+        st.warning(status_text)
+
+    else:
+        st.error(status_text)
     if risk_count > 0:
 
         risk_preview = ", ".join(critical_districts[:6])
