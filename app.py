@@ -4086,15 +4086,31 @@ with tab_chat:
                             delphi_context = json.dumps(MOCK_DELPHI_DB, indent=2)
                             data_summary = chat_df.describe(include='all').to_csv()
                             
+                            # --- SMART CONTEXT INJECTION ---
+                            # Dynamically find top and bottom districts so Gemini knows who they are
+                            ranking_context = ""
+                            if all(c in chat_df.columns for c in ["district", "EVS", "Language", "Math"]):
+                                temp_df = chat_df.copy()
+                                temp_df["Overall_Score"] = temp_df[["EVS", "Language", "Math"]].mean(axis=1)
+                                top_districts = temp_df.sort_values("Overall_Score", ascending=False).head(5)[["district", "Overall_Score", "EVS", "Language", "Math"]].to_csv(index=False)
+                                bottom_districts = temp_df.sort_values("Overall_Score", ascending=True).head(5)[["district", "Overall_Score", "EVS", "Language", "Math", "ptr", "infra"]].to_csv(index=False)
+                                
+                                ranking_context = f"\nTOP 5 PERFORMING DISTRICTS:\n{top_districts}\n\nBOTTOM 5 AT-RISK DISTRICTS:\n{bottom_districts}"
+                            else:
+                                ranking_context = "DATA SAMPLE:\n" + chat_df.head(15).to_csv(index=False)
+
                             system_prompt = f"""
                             You are a Senior Education Policy Advisor using RAG (Retrieval-Augmented Generation).
-                            Answer the user's query using ONLY the Data Summary and the Delphi Database below.
+                            Answer the user's query using ONLY the Data Summary, the District Rankings, and the Delphi Database below.
                             
                             DELPHI INTERVENTION DATABASE:
                             {delphi_context}
 
                             DATA SUMMARY:
                             {data_summary}
+                            
+                            DISTRICT RANKINGS:
+                            {ranking_context}
 
                             User Question: {user_query}
 
