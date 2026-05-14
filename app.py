@@ -3641,7 +3641,8 @@ with tab_policy:
             opt_df = opt_df.dropna()
             
             opt_df["Current_Teachers"] = (sim_students / opt_df[opt_ptr_col]).astype(int)
-            opt_df["Target_Teachers"] = (sim_students / target_ptr).astype(int)
+            # FIX: Use int() since both sim_students and target_ptr are simple numbers
+            opt_df["Target_Teachers"] = int(sim_students / target_ptr)
             
             # 2. Identify Surplus and Deficit
             opt_df["Diff"] = opt_df["Current_Teachers"] - opt_df["Target_Teachers"]
