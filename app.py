@@ -3595,7 +3595,87 @@ with tab_policy:
         """,
         unsafe_allow_html=True
     )
+    # =========================================================
+    # PRESCRIPTIVE AI: RESOURCE ALLOCATION OPTIMIZER
+    # =========================================================
+    
+    st.markdown("---")
+    st.subheader("⚖️ Resource Allocation Optimizer (Teacher Redeployment)")
+    st.markdown(
+        "<div class='section-desc'>Mathematically calculate optimal teacher redeployment from surplus districts to deficit districts to achieve a balanced Pupil-Teacher Ratio (PTR).</div>", 
+        unsafe_allow_html=True
+    )
 
+    if "ptr" in df_policy.columns and district_col:
+        
+        opt_c1, opt_c2 = st.columns([1, 2])
+        
+        with opt_c1:
+            target_ptr = st.slider("Target Maximum PTR", min_value=20, max_value=40, value=30, step=1)
+            st.info("The algorithm assumes an average of 10,000 students per district for simulation purposes.")
+            
+        with opt_c2:
+            # --- Optimization Algorithm (Greedy Redeployment) ---
+            # 1. Calculate current teachers assuming 10k students
+            sim_students = 10000
+            opt_df = df_policy[[district_col, "ptr"]].copy().dropna()
+            opt_df["Current_Teachers"] = (sim_students / opt_df["ptr"]).astype(int)
+            opt_df["Target_Teachers"] = (sim_students / target_ptr).astype(int)
+            
+            # 2. Identify Surplus and Deficit
+            opt_df["Diff"] = opt_df["Current_Teachers"] - opt_df["Target_Teachers"]
+            surplus_districts = opt_df[opt_df["Diff"] > 0].sort_values("Diff", ascending=False).to_dict('records')
+            deficit_districts = opt_df[opt_df["Diff"] < 0].sort_values("Diff", ascending=True).to_dict('records')
+            
+            # 3. Match Surplus to Deficit
+            transfers = []
+            total_moved = 0
+            
+            s_idx = 0
+            d_idx = 0
+            
+            while s_idx < len(surplus_districts) and d_idx < len(deficit_districts):
+                s_dist = surplus_districts[s_idx]
+                d_dist = deficit_districts[d_idx]
+                
+                # How many can we move? Minimum of what S has and what D needs.
+                move_amount = min(s_dist["Diff"], abs(d_dist["Diff"]))
+                
+                if move_amount > 0:
+                    transfers.append({
+                        "Source District (Surplus)": s_dist[district_col],
+                        "Target District (Deficit)": d_dist[district_col],
+                        "Teachers Redeployed": move_amount
+                    })
+                    total_moved += move_amount
+                    
+                    # Update balances
+                    surplus_districts[s_idx]["Diff"] -= move_amount
+                    deficit_districts[d_idx]["Diff"] += move_amount
+                
+                # Move pointers if exhausted/fulfilled
+                if surplus_districts[s_idx]["Diff"] == 0:
+                    s_idx += 1
+                if deficit_districts[d_idx]["Diff"] == 0:
+                    d_idx += 1
+
+            # --- Display Results ---
+            t1, t2, t3 = st.columns(3)
+            t1.metric("Total Teachers Redeployed", f"{total_moved:,}")
+            t2.metric("Districts Relieved", len(set([t["Target District (Deficit)"] for t in transfers])))
+            t3.metric("Est. Redeployment Cost", f"₹{(total_moved * 50000):,.0f}") # Assuming 50k transfer allowance
+            
+        if transfers:
+            st.markdown("#### Optimal Transfer Action Plan")
+            transfer_df = pd.DataFrame(transfers)
+            st.dataframe(transfer_df, use_container_width=True)
+        else:
+            st.success(f"All districts are currently operating at or below the target PTR of {target_ptr}. No redeployment needed!")
+            
+    else:
+        st.warning("PTR or District column not found. Cannot run optimization.")
+
+    
     # =========================================================
     # EXPORT CENTER
     # =========================================================
