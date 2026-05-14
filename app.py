@@ -3606,10 +3606,21 @@ with tab_policy:
         unsafe_allow_html=True
     )
 
-    # --- ROBUST COLUMN DETECTION ---
-    # This automatically finds the right columns even if they were renamed during schema extraction!
-    opt_dist_col = next((c for c in df_policy.columns if "dist" in c.lower()), None)
-    opt_ptr_col = next((c for c in df_policy.columns if "ptr" in c.lower() or "pupil" in c.lower() or "teacher" in c.lower()), None)
+    # --- ULTRA-ROBUST COLUMN DETECTION ---
+    # Find PTR column safely
+    opt_ptr_col = next((c for c in df_policy.columns if "ptr" in str(c).lower() or "pupil" in str(c).lower() or "teacher" in str(c).lower()), None)
+    
+    # Find District column safely (fallback to previously defined district_col)
+    opt_dist_col = None
+    if 'district_col' in locals() and district_col:
+        opt_dist_col = district_col
+    else:
+        opt_dist_col = next((c for c in df_policy.columns if "dist" in str(c).lower() or "name" in str(c).lower()), None)
+        
+    # Absolute Fallback: If the district column was deleted or renamed to something unrecognizable, generate IDs
+    if not opt_dist_col:
+        df_policy["System_District_ID"] = "District_" + df_policy.index.astype(str)
+        opt_dist_col = "System_District_ID"
 
     if opt_ptr_col and opt_dist_col:
         
@@ -3624,6 +3635,11 @@ with tab_policy:
             # 1. Calculate current teachers assuming 10k students
             sim_students = 10000
             opt_df = df_policy[[opt_dist_col, opt_ptr_col]].copy().dropna()
+            
+            # Ensure PTR is strictly numeric (prevents string errors)
+            opt_df[opt_ptr_col] = pd.to_numeric(opt_df[opt_ptr_col], errors="coerce")
+            opt_df = opt_df.dropna()
+            
             opt_df["Current_Teachers"] = (sim_students / opt_df[opt_ptr_col]).astype(int)
             opt_df["Target_Teachers"] = (sim_students / target_ptr).astype(int)
             
@@ -3679,8 +3695,7 @@ with tab_policy:
             
     else:
         st.warning(f"Could not find required columns. System detected District column as '{opt_dist_col}' and PTR column as '{opt_ptr_col}'.")
-
-    
+        
     # =========================================================
     # EXPORT CENTER
     # =========================================================
