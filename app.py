@@ -3953,8 +3953,88 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ---------------- Tab 7 - AI Data Assistant ----------------
+with tab_chat:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">💬 Chat with Governance Data</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Ask questions about your loaded dataset in plain English. The AI will analyze the active data context to provide insights.</div>', unsafe_allow_html=True)
 
-# ---------------- Tab 7 - Debug ----------------
+    chat_df = st.session_state.get("active_df")
+    if not isinstance(chat_df, pd.DataFrame) or chat_df.empty:
+        chat_df = st.session_state.get("df_edited")
+
+    if not isinstance(chat_df, pd.DataFrame) or chat_df.empty:
+        st.warning("Please load and clean your dataset in the previous tabs before chatting with the AI.")
+    else:
+        # 1. Initialize chat history in session state
+        if "chat_messages" not in st.session_state:
+            st.session_state.chat_messages = []
+
+        # 2. Display existing chat messages
+        for message in st.session_state.chat_messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # 3. Accept user input
+        if user_query := st.chat_input("E.g., Which districts have an EVS below 50 but high PTR?"):
+            
+            # Add user message to history and UI
+            st.session_state.chat_messages.append({"role": "user", "content": user_query})
+            with st.chat_message("user"):
+                st.markdown(user_query)
+
+            # Generate AI response
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                
+                api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+                if not api_key:
+                    message_placeholder.error("⚠️ No Gemini API Key found. Please set GEMINI_API_KEY in your environment to use the chat.")
+                else:
+                    try:
+                        import google.generativeai as genai
+                        genai.configure(api_key=api_key)
+                        chat_model = genai.GenerativeModel("models/gemini-2.5-flash")
+
+                        # Build the context payload (Data Summary + Head)
+                        data_summary = chat_df.describe(include='all').to_csv()
+                        sample_data = chat_df.head(15).to_csv()
+
+                        system_prompt = f"""
+                        You are an expert Data Governance AI Assistant advising a national education minister.
+                        Your job is to answer questions based strictly on the dataset provided below.
+                        
+                        DATA SUMMARY (Statistical Overview):
+                        {data_summary}
+
+                        DATA SAMPLE (First 15 Rows):
+                        {sample_data}
+
+                        User Question: {user_query}
+
+                        Instructions:
+                        1. Be concise, highly analytical, and professional.
+                        2. If the user asks about specific districts, refer to the DATA SAMPLE. 
+                        3. If the user asks about trends/averages, refer to the DATA SUMMARY.
+                        4. Do not invent data. If the answer isn't in the provided text, say so.
+                        5. Use markdown for formatting (bullet points, bold text).
+                        """
+
+                        with st.spinner("Analyzing governance data..."):
+                            response = chat_model.generate_content(system_prompt)
+                            full_response = response.text
+
+                        # Display and save response
+                        message_placeholder.markdown(full_response)
+                        st.session_state.chat_messages.append({"role": "assistant", "content": full_response})
+
+                    except Exception as e:
+                        message_placeholder.error(f"Error communicating with AI: {pretty_exception(e)}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ---------------- Tab 8 - Debug ----------------
 
 with tab_debug:
 
