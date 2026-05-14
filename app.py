@@ -2985,87 +2985,32 @@ with tab_policy:
         else "NA"
     )
 
+    # Bulletproof helper function to prevent IDE auto-formatting bugs
+    def render_exec_kpi(value, label):
+        val_safe = str(value).strip()
+        label_safe = str(label).strip()
+        html_str = '<div class="kpi-card">'
+        html_str += '<div class="kpi-value">' + val_safe + '</div>'
+        html_str += '<div class="kpi-label">' + label_safe + '</div>'
+        html_str += '</div>'
+        st.markdown(html_str, unsafe_allow_html=True)
+
     k1, k2, k3, k4, k5 = st.columns(5)
 
     with k1:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-value">
-                    {district_count}
-                </div>
-
-                <div class="kpi-label">
-                    Districts
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        render_exec_kpi(district_count, "Districts")
 
     with k2:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-value">
-                    {avg_ehi}
-                </div>
-
-                <div class="kpi-label">
-                    Governance Score
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        render_exec_kpi(avg_ehi, "Governance Score")
 
     with k3:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-value">
-                    {critical_count}
-                </div>
-
-                <div class="kpi-label">
-                    Critical Districts
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        render_exec_kpi(critical_count, "Critical Districts")
 
     with k4:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-value">
-                    {avg_infra}
-                </div>
-
-                <div class="kpi-label">
-                    Avg Infrastructure
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        render_exec_kpi(avg_infra, "Avg Infrastructure")
 
     with k5:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-value">
-                    {avg_ptr}
-                </div>
-
-                <div class="kpi-label">
-                    Avg PTR
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        render_exec_kpi(avg_ptr, "Avg PTR")
 
     # =========================================================
     # PRIORITY DISTRIBUTION
