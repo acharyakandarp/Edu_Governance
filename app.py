@@ -525,13 +525,13 @@ def load_sample() -> pd.DataFrame:
     states = ["S1", "S2", "S3", "S4", "S5"]
     districts = [f"D{i}" for i in range(1, 61)]
     
-    # Base coordinates roughly mapping to North, West, South, East, Central India
+    # Base coordinates shifted strictly INLAND to prevent ocean-plotting
     state_coords = {
-        "S1": (28.6, 77.2), # North
-        "S2": (19.0, 72.8), # West
-        "S3": (13.0, 80.2), # South
-        "S4": (22.5, 88.3), # East
-        "S5": (23.2, 77.4)  # Central
+        "S1": (28.6, 77.2), # North (Delhi/Haryana region)
+        "S2": (19.5, 75.5), # West (Inland Maharashtra/Marathwada)
+        "S3": (13.5, 78.0), # South (Inland Karnataka/Andhra border)
+        "S4": (23.5, 86.0), # East (Inland Jharkhand/Bengal border)
+        "S5": (23.2, 77.4)  # Central (Madhya Pradesh)
     }
 
     data = []
@@ -539,10 +539,10 @@ def load_sample() -> pd.DataFrame:
     for i, d in enumerate(districts):
         state = states[i % len(states)]
         
-        # Add slight random spread to base coordinates for districts
+        # Reduced random spread from 3.0 down to 1.5 degrees (~150km radius)
         base_lat, base_lon = state_coords[state]
-        lat = base_lat + np.random.uniform(-3.0, 3.0)
-        lon = base_lon + np.random.uniform(-3.0, 3.0)
+        lat = base_lat + np.random.uniform(-1.5, 1.5)
+        lon = base_lon + np.random.uniform(-1.5, 1.5)
 
         # simulate realistic variation clusters
         base = np.random.choice(["high", "medium", "low"])
