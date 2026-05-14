@@ -2933,20 +2933,11 @@ with tab_policy:
     st.markdown(
         f"""
         <div class="{gov_class}">
-            <b>National Education Governance Status:</b>
-            {gov_status}
-
+            <b>National Education Governance Status:</b> {gov_status}
             <br><br>
-
-            System-wide educational performance,
-            staffing pressure, and infrastructure
-            readiness were assessed through a
-            composite governance intelligence model.
-
+            System-wide educational performance, staffing pressure, and infrastructure readiness were assessed through a composite governance intelligence model.
             <br><br>
-
-            Current National Governance Score:
-            <b>{avg_ehi}/100</b>
+            Current National Governance Score: <b>{avg_ehi}/100</b>
         </div>
         """,
         unsafe_allow_html=True
