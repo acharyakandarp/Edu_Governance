@@ -1392,28 +1392,42 @@ st.caption(
 # KPI STRIP
 # =========================================================
 
+# 1. Define a helper function to build the HTML safely
+def render_kpi(value, label):
+    # .strip() removes any hidden newlines or spaces in the variables
+    val_safe = str(value).strip()
+    label_safe = str(label).strip()
+    
+    # Building the string like this stops your IDE from auto-formatting it into multiple lines
+    html_str = '<div class="kpi-card">'
+    html_str += '<div class="kpi-value">' + val_safe + '</div>'
+    html_str += '<div class="kpi-label">' + label_safe + '</div>'
+    html_str += '</div>'
+    
+    st.markdown(html_str, unsafe_allow_html=True)
+
+# 2. Render the columns
 k1, k2, k3, k4, k5 = st.columns(5)
 
 with k1:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-value">{district_count}</div><div class="kpi-label">Districts</div></div>', unsafe_allow_html=True)
+    render_kpi(district_count, "Districts")
 
 with k2:
     val_k2 = avg_learning if avg_learning else "NA"
-    st.markdown(f'<div class="kpi-card"><div class="kpi-value">{val_k2}</div><div class="kpi-label">Governance Score</div></div>', unsafe_allow_html=True)
+    render_kpi(val_k2, "Governance Score")
 
 with k3:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-value">{risk_count}</div><div class="kpi-label">Critical Districts</div></div>', unsafe_allow_html=True)
+    render_kpi(risk_count, "Critical Districts")
 
 with k4:
     val_k4 = avg_infra if avg_infra else "NA"
-    st.markdown(f'<div class="kpi-card"><div class="kpi-value">{val_k4}</div><div class="kpi-label">Avg Infrastructure</div></div>', unsafe_allow_html=True)
+    render_kpi(val_k4, "Avg Infrastructure")
 
 with k5:
     val_k5 = avg_ptr if avg_ptr else "NA"
-    st.markdown(f'<div class="kpi-card"><div class="kpi-value">{val_k5}</div><div class="kpi-label">Avg PTR</div></div>', unsafe_allow_html=True)
+    render_kpi(val_k5, "Avg PTR")
 
 st.markdown("---")
-
 # =========================================================
 # GOVERNANCE STATUS + INSIGHTS
 # =========================================================
