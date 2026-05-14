@@ -1394,30 +1394,64 @@ st.caption(
 
 k1, k2, k3, k4, k5 = st.columns(5)
 
-k1.metric(
-    "Districts",
-    district_count
-)
+with k1:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{district_count}</div>
+            <div class="kpi-label">Districts</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-k2.metric(
-    "Governance Score",
-    avg_learning if avg_learning else "NA"
-)
+with k2:
+    # Resolve the value before passing it to the f-string for cleaner formatting
+    val_k2 = avg_learning if avg_learning else "NA"
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{val_k2}</div>
+            <div class="kpi-label">Governance Score</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-k3.metric(
-    "Critical Districts",
-    risk_count
-)
+with k3:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{risk_count}</div>
+            <div class="kpi-label">Critical Districts</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-k4.metric(
-    "Avg Infrastructure",
-    avg_infra if avg_infra else "NA"
-)
+with k4:
+    val_k4 = avg_infra if avg_infra else "NA"
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{val_k4}</div>
+            <div class="kpi-label">Avg Infrastructure</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-k5.metric(
-    "Avg PTR",
-    avg_ptr if avg_ptr else "NA"
-)
+with k5:
+    val_k5 = avg_ptr if avg_ptr else "NA"
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{val_k5}</div>
+            <div class="kpi-label">Avg PTR</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.markdown("---")
 
