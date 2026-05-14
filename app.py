@@ -3606,7 +3606,12 @@ with tab_policy:
         unsafe_allow_html=True
     )
 
-    if "ptr" in df_policy.columns and district_col:
+    # --- ROBUST COLUMN DETECTION ---
+    # This automatically finds the right columns even if they were renamed during schema extraction!
+    opt_dist_col = next((c for c in df_policy.columns if "dist" in c.lower()), None)
+    opt_ptr_col = next((c for c in df_policy.columns if "ptr" in c.lower() or "pupil" in c.lower() or "teacher" in c.lower()), None)
+
+    if opt_ptr_col and opt_dist_col:
         
         opt_c1, opt_c2 = st.columns([1, 2])
         
@@ -3618,8 +3623,8 @@ with tab_policy:
             # --- Optimization Algorithm (Greedy Redeployment) ---
             # 1. Calculate current teachers assuming 10k students
             sim_students = 10000
-            opt_df = df_policy[[district_col, "ptr"]].copy().dropna()
-            opt_df["Current_Teachers"] = (sim_students / opt_df["ptr"]).astype(int)
+            opt_df = df_policy[[opt_dist_col, opt_ptr_col]].copy().dropna()
+            opt_df["Current_Teachers"] = (sim_students / opt_df[opt_ptr_col]).astype(int)
             opt_df["Target_Teachers"] = (sim_students / target_ptr).astype(int)
             
             # 2. Identify Surplus and Deficit
@@ -3643,8 +3648,8 @@ with tab_policy:
                 
                 if move_amount > 0:
                     transfers.append({
-                        "Source District (Surplus)": s_dist[district_col],
-                        "Target District (Deficit)": d_dist[district_col],
+                        "Source District (Surplus)": s_dist[opt_dist_col],
+                        "Target District (Deficit)": d_dist[opt_dist_col],
                         "Teachers Redeployed": move_amount
                     })
                     total_moved += move_amount
@@ -3673,7 +3678,7 @@ with tab_policy:
             st.success(f"All districts are currently operating at or below the target PTR of {target_ptr}. No redeployment needed!")
             
     else:
-        st.warning("PTR or District column not found. Cannot run optimization.")
+        st.warning(f"Could not find required columns. System detected District column as '{opt_dist_col}' and PTR column as '{opt_ptr_col}'.")
 
     
     # =========================================================
