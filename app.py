@@ -1628,16 +1628,16 @@ st.markdown("---")
 
 # ===== WORKFLOW NAVIGATION (FINAL — ALIGNED WITH SYSTEM) =====
 
-tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_debug = st.tabs([
+tab_data, tab_prep, tab_clean, tab_analysis, tab_policy, tab_ai, tab_chat, tab_debug = st.tabs([
     "📊 Data Ingestion",
     "🧠 Data Preparation",
     "🧹 Clean & Edit",
     "📈 Statistical Analysis",
     "🏛️ Policy Intelligence",
     "🤖 AI Synthesis",
+    "💬 AI Assistant",
     "⚙️ System Debug"
 ])
-
 # ===== SIDEBAR (CONTROL PANEL) =====
 st.sidebar.markdown("## ⚙️ Control Panel")
 
