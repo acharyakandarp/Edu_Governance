@@ -3953,12 +3953,84 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ---------------- Tab 7 - AI Data Assistant ----------------
+# ---------------- Tab 7 - AI Data Assistant (Dual-Engine) ----------------
 with tab_chat:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">💬 Chat with Governance Data</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-desc">Ask questions about your loaded dataset in plain English. The AI will analyze the active data context to provide insights.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">💬 Interactive Governance Advisor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Consult with the AI regarding the current dataset. Choose the deterministic Local Expert System (based on the Delphi consensus database) or the Generative Gemini Advisor.</div>', unsafe_allow_html=True)
 
+    # --- MOCK DELPHI DATABASE ---
+    MOCK_DELPHI_DB = {
+        "learning_math": {
+            "keywords": ["math", "numeracy", "calculation", "arithmetic", "learning"],
+            "interventions": [
+                {"id": "INT-M1", "name": "Targeted Foundational Numeracy Remediation", "action": "Intensive 6-week pull-out program focusing on base-10 concepts and practical arithmetic.", "resources": "₹500,000 per district + 2 Master Trainers"}
+            ]
+        },
+        "learning_lang": {
+            "keywords": ["language", "reading", "literacy", "comprehension", "english", "learning"],
+            "interventions": [
+                {"id": "INT-L1", "name": "Phonetics & Reading Fluency Camp", "action": "Daily 45-minute guided reading sessions with leveled texts.", "resources": "Library kits + 1 Reading Coach per cluster"}
+            ]
+        },
+        "ptr_burden": {
+            "keywords": ["ptr", "teacher", "ratio", "staff", "workload", "overload"],
+            "interventions": [
+                {"id": "INT-P1", "name": "Emergency Teacher Deployment Framework", "action": "Re-routing surplus state educators to high-burden schools with PTR > 35.", "resources": "Deployment budget: ₹1.2M + Transport allowance"}
+            ]
+        },
+        "infra_stress": {
+            "keywords": ["infra", "infrastructure", "building", "facilities", "water", "electricity"],
+            "interventions": [
+                {"id": "INT-I1", "name": "Rapid Infrastructure Upgrades", "action": "Emergency repair of WASH facilities, classroom lighting, and digital readiness.", "resources": "Capital grant: ₹2.5M per district"}
+            ]
+        }
+    }
+
+    # --- LOCAL EXPERT ENGINE LOGIC ---
+    def run_local_engine(query, df):
+        query_lower = query.lower()
+        response_lines = ["### 🏛️ Local Expert System Diagnosis\n*Deterministic analysis based on Delphi Consensus Matrix.*\n"]
+        
+        # 1. Identify specific critical districts from the live data
+        if "Priority" in df.columns:
+            critical_districts = df[df["Priority"] == "Critical"]
+            if not critical_districts.empty:
+                names = critical_districts.get("district", critical_districts.index).tolist()
+                names_str = ", ".join([str(n) for n in names])
+                response_lines.append(f"**Identified Critical Districts:** {names_str}\n")
+        
+        # 2. Extract Intent and Match with Delphi DB
+        matched_interventions = []
+        for category, data in MOCK_DELPHI_DB.items():
+            if any(kw in query_lower for kw in data["keywords"]):
+                matched_interventions.extend(data["interventions"])
+        
+        # 3. Fallback: If no keywords matched, scan the actual dataframe averages
+        if not matched_interventions:
+            response_lines.append("> *No specific metric mentioned in query. Scanning dataset for highest systemic risks...*\n")
+            if "Math" in df.columns and df["Math"].mean() < 55:
+                matched_interventions.extend(MOCK_DELPHI_DB["learning_math"]["interventions"])
+            if "ptr" in df.columns and df["ptr"].mean() > 32:
+                matched_interventions.extend(MOCK_DELPHI_DB["ptr_burden"]["interventions"])
+            if not matched_interventions: # Absolute fallback
+                matched_interventions.extend(MOCK_DELPHI_DB["infra_stress"]["interventions"])
+
+        # 4. Format Output
+        response_lines.append("#### Recommended Interventions (Delphi Database):")
+        # Deduplicate
+        seen = set()
+        for inv in matched_interventions:
+            if inv['id'] not in seen:
+                response_lines.append(f"* **[{inv['id']}] {inv['name']}**")
+                response_lines.append(f"    * **Action:** {inv['action']}")
+                response_lines.append(f"    * **Resource Allocation:** {inv['resources']}")
+                seen.add(inv['id'])
+
+        return "\n".join(response_lines)
+
+
+    # --- UI & STATE MANAGEMENT ---
     chat_df = st.session_state.get("active_df")
     if not isinstance(chat_df, pd.DataFrame) or chat_df.empty:
         chat_df = st.session_state.get("df_edited")
@@ -3966,74 +4038,84 @@ with tab_chat:
     if not isinstance(chat_df, pd.DataFrame) or chat_df.empty:
         st.warning("Please load and clean your dataset in the previous tabs before chatting with the AI.")
     else:
-        # 1. Initialize chat history in session state
+        # Engine Toggle
+        engine_mode = st.radio(
+            "Select Intelligence Routing:", 
+            ["Local Expert System (Deterministic & Rule-Based)", "Gemini Policy Advisor (Generative RAG)"],
+            horizontal=True
+        )
+        st.markdown("---")
+
         if "chat_messages" not in st.session_state:
             st.session_state.chat_messages = []
 
-        # 2. Display existing chat messages
+        # Render chat history
         for message in st.session_state.chat_messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        # 3. Accept user input
-        if user_query := st.chat_input("E.g., Which districts have an EVS below 50 but high PTR?"):
+        # Input box
+        if user_query := st.chat_input("E.g., Which districts are critical, and what are the pedagogical interventions?"):
             
-            # Add user message to history and UI
             st.session_state.chat_messages.append({"role": "user", "content": user_query})
             with st.chat_message("user"):
                 st.markdown(user_query)
 
-            # Generate AI response
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
                 
-                api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-                if not api_key:
-                    message_placeholder.error("⚠️ No Gemini API Key found. Please set GEMINI_API_KEY in your environment to use the chat.")
+                # --- ROUTE 1: LOCAL ENGINE ---
+                if "Local" in engine_mode:
+                    with st.spinner("Querying Local Delphi Database..."):
+                        local_response = run_local_engine(user_query, chat_df)
+                        message_placeholder.markdown(local_response)
+                        st.session_state.chat_messages.append({"role": "assistant", "content": local_response})
+                
+                # --- ROUTE 2: GEMINI ENGINE ---
                 else:
-                    try:
-                        import google.generativeai as genai
-                        genai.configure(api_key=api_key)
-                        chat_model = genai.GenerativeModel("models/gemini-2.5-flash")
+                    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+                    if not api_key:
+                        message_placeholder.error("⚠️ No API Key found. Set GEMINI_API_KEY in your environment, or switch to the Local Engine.")
+                    else:
+                        try:
+                            import google.generativeai as genai
+                            genai.configure(api_key=api_key)
+                            chat_model = genai.GenerativeModel("models/gemini-2.5-flash")
 
-                        # Build the context payload (Data Summary + Head)
-                        data_summary = chat_df.describe(include='all').to_csv()
-                        sample_data = chat_df.head(15).to_csv()
+                            # Convert Delphi DB to string for RAG Context
+                            delphi_context = json.dumps(MOCK_DELPHI_DB, indent=2)
+                            data_summary = chat_df.describe(include='all').to_csv()
+                            
+                            system_prompt = f"""
+                            You are a Senior Education Policy Advisor using RAG (Retrieval-Augmented Generation).
+                            Answer the user's query using ONLY the Data Summary and the Delphi Database below.
+                            
+                            DELPHI INTERVENTION DATABASE:
+                            {delphi_context}
 
-                        system_prompt = f"""
-                        You are an expert Data Governance AI Assistant advising a national education minister.
-                        Your job is to answer questions based strictly on the dataset provided below.
-                        
-                        DATA SUMMARY (Statistical Overview):
-                        {data_summary}
+                            DATA SUMMARY:
+                            {data_summary}
 
-                        DATA SAMPLE (First 15 Rows):
-                        {sample_data}
+                            User Question: {user_query}
 
-                        User Question: {user_query}
+                            Instructions:
+                            1. Be conversational but authoritative.
+                            2. If suggesting solutions, you MUST cite the specific Intervention IDs (e.g., INT-M1) from the Delphi Database. Do not invent your own solutions.
+                            3. Do not invent data. Use markdown formatting.
+                            """
 
-                        Instructions:
-                        1. Be concise, highly analytical, and professional.
-                        2. If the user asks about specific districts, refer to the DATA SAMPLE. 
-                        3. If the user asks about trends/averages, refer to the DATA SUMMARY.
-                        4. Do not invent data. If the answer isn't in the provided text, say so.
-                        5. Use markdown for formatting (bullet points, bold text).
-                        """
+                            with st.spinner("Gemini synthesizing data and expert consensus..."):
+                                response = chat_model.generate_content(system_prompt)
+                                full_response = response.text
 
-                        with st.spinner("Analyzing governance data..."):
-                            response = chat_model.generate_content(system_prompt)
-                            full_response = response.text
+                            message_placeholder.markdown(full_response)
+                            st.session_state.chat_messages.append({"role": "assistant", "content": full_response})
 
-                        # Display and save response
-                        message_placeholder.markdown(full_response)
-                        st.session_state.chat_messages.append({"role": "assistant", "content": full_response})
-
-                    except Exception as e:
-                        message_placeholder.error(f"Error communicating with AI: {pretty_exception(e)}")
+                        except Exception as e:
+                            message_placeholder.error(f"Error communicating with AI: {pretty_exception(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-
+    
 # ---------------- Tab 8 - Debug ----------------
 
 with tab_debug:
