@@ -3027,7 +3027,73 @@ with tab_policy:
 
     with k5:
         render_exec_kpi(avg_ptr, "Avg PTR")
+    # =========================================================
+    # GEOSPATIAL INTELLIGENCE MAP
+    # =========================================================
+    
+    st.markdown("---")
+    st.subheader("Geospatial Risk Distribution")
+    
+    # Check if we have coordinate data to plot
+    lat_col = next((c for c in df_policy.columns if "lat" in c.lower()), None)
+    lon_col = next((c for c in df_policy.columns if "lon" in c.lower()), None)
 
+    if lat_col and lon_col:
+        st.markdown(
+            "<div class='section-desc'>Interactive mapping of district priority levels. Hover over points for specific governance metrics.</div>", 
+            unsafe_allow_html=True
+        )
+        
+        # Build the Map
+        fig_map = px.scatter_mapbox(
+            df_policy,
+            lat=lat_col,
+            lon=lon_col,
+            color="Priority",
+            size="Education_Health_Index",  # Bubble size based on score
+            size_max=15,
+            hover_name=district_col if district_col else None,
+            hover_data={
+                lat_col: False, # Hide raw coords in tooltip
+                lon_col: False,
+                "Education_Health_Index": True,
+                "Policy_Risk": True,
+                "ptr": True,
+                "infra": True
+            },
+            color_discrete_map={
+                "Critical": "#dc2626",       # Red
+                "High Priority": "#ea580c",  # Orange
+                "Moderate": "#f59e0b",       # Yellow
+                "Stable": "#16a34a"          # Green
+            },
+            zoom=3.5,
+            center={"lat": 22.0, "lon": 78.0}, # Centered roughly on India
+            height=550
+        )
+        
+        # carto-positron gives a beautiful, clean base map without needing an API key
+        fig_map.update_layout(
+            mapbox_style="carto-positron", 
+            margin={"r":0,"t":0,"l":0,"b":0},
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        
+        # Wrap in a card for styling consistency
+        st.markdown('<div class="card" style="padding: 10px;">', unsafe_allow_html=True)
+        st.plotly_chart(fig_map, use_container_width=True, key="geospatial_risk_map")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    else:
+        st.info("💡 Upload data with 'Latitude' and 'Longitude' columns to unlock the Geospatial Intelligence map.")
+
+    
     # =========================================================
     # PRIORITY DISTRIBUTION
     # =========================================================
