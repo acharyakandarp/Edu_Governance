@@ -3962,15 +3962,23 @@ with tab_chat:
     # --- MOCK DELPHI DATABASE ---
     MOCK_DELPHI_DB = {
         "learning_math": {
-            "keywords": ["math", "numeracy", "calculation", "arithmetic", "learning"],
+            "keywords": ["math", "numeracy", "calculation", "arithmetic", "learning", "sustain", "top", "best", "excellent"],
             "interventions": [
-                {"id": "INT-M1", "name": "Targeted Foundational Numeracy Remediation", "action": "Intensive 6-week pull-out program focusing on base-10 concepts and practical arithmetic.", "resources": "₹500,000 per district + 2 Master Trainers"}
+                {"id": "INT-M1", "name": "Targeted Foundational Numeracy Remediation", "action": "Intensive 6-week pull-out program focusing on base-10 concepts.", "resources": "₹500,000 per district + 2 Master Trainers"},
+                {"id": "INT-M2", "name": "Advanced STEM Centers of Excellence", "action": "Establish district-level math olympiad training and advanced problem-solving labs to sustain top-tier performance.", "resources": "Capital grant: ₹1.5M + 1 University Liaison"}
             ]
         },
         "learning_lang": {
-            "keywords": ["language", "reading", "literacy", "comprehension", "english", "learning"],
+            "keywords": ["language", "reading", "literacy", "comprehension", "english", "learning", "sustain", "top", "best"],
             "interventions": [
-                {"id": "INT-L1", "name": "Phonetics & Reading Fluency Camp", "action": "Daily 45-minute guided reading sessions with leveled texts.", "resources": "Library kits + 1 Reading Coach per cluster"}
+                {"id": "INT-L1", "name": "Phonetics & Reading Fluency Camp", "action": "Daily 45-minute guided reading sessions with leveled texts.", "resources": "Library kits + 1 Reading Coach per cluster"},
+                {"id": "INT-L2", "name": "Creative Writing & Debate Fellowship", "action": "Fund inter-school debate leagues to maintain advanced language proficiency.", "resources": "₹300,000 competition fund"}
+            ]
+        },
+        "system_leadership": {
+            "keywords": ["sustain", "model", "mentor", "leadership", "best", "top"],
+            "interventions": [
+                {"id": "INT-S1", "name": "Lighthouse District Mentorship Program", "action": "Pair top-performing districts with critical at-risk districts for pedagogical knowledge transfer.", "resources": "Cross-district collaboration budget: ₹250,000"}
             ]
         },
         "ptr_burden": {
