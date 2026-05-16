@@ -2816,6 +2816,29 @@ with tab_policy:
         df_policy["System_District_ID"] = "District_" + df_policy.index.astype(str)
         district_col = "System_District_ID"
 
+    # --- The Scoring Math ---
+    scaler = StandardScaler()
+
+    scaled = scaler.fit_transform(
+        df_policy[selected_vars].fillna(
+            df_policy[selected_vars].median()
+        )
+    )
+
+    scaled_df = pd.DataFrame(
+        scaled,
+        columns=selected_vars
+    )
+
+    for col in scaled_df.columns:
+        if "ptr" in col.lower():
+            scaled_df[col] *= -1
+
+    df_policy["Education_Health_Index"] = (
+        scaled_df.mean(axis=1) * 20 + 50
+    ).round(2)
+
+
     # =========================================================
     # PRIORITY CLASSIFICATION
     # =========================================================
