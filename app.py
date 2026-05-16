@@ -3525,6 +3525,93 @@ with tab_policy:
             use_container_width=True
         )
 
+        # =====================================================
+        # PREDICTIVE AI: LONGITUDINAL FORECASTING
+        # =====================================================
+        
+        st.markdown("---")
+        st.markdown("### 📈 Predictive Forecasting (Time-Series)")
+        st.markdown(
+            "<div class='section-desc'>Simulated historical trend analysis and 3-year linear projection to identify future systemic trajectories.</div>", 
+            unsafe_allow_html=True
+        )
+
+        forecast_indicator = st.selectbox(
+            "Select Indicator to Forecast", 
+            selected_vars, 
+            key=f"forecast_var_{selected_district}"
+        )
+
+        # 1. Simulate 5 years of historical data anchoring on the current value
+        current_val = float(district_data[forecast_indicator])
+        years = [2020, 2021, 2022, 2023, 2024]
+
+        # Create a consistent but random trend slope for this specific district
+        np.random.seed(hash(selected_district) % (2**32)) 
+        
+        # Adjust slope magnitude based on indicator type (infra is 0-1, others are larger)
+        if "infra" in forecast_indicator.lower():
+            trend_slope = np.random.uniform(-0.04, 0.04)
+        else:
+            trend_slope = np.random.uniform(-3.0, 3.0)
+
+        historical_vals = []
+        for i in range(5):
+            # Back-calculate so the final year (2024) equals the actual current_val
+            noise = np.random.normal(0, abs(trend_slope) * 0.3)
+            val = current_val - (trend_slope * (4 - i)) + noise
+            historical_vals.append(max(0, val)) # Prevent negative scores
+
+        # Override the last year to exactly match the live dataset
+        historical_vals[-1] = current_val
+
+        # 2. Forecast next 3 years (2025, 2026, 2027) using linear regression
+        future_years = [2025, 2026, 2027]
+        z = np.polyfit(years, historical_vals, 1)
+        p = np.poly1d(z)
+        future_vals = p(future_years).tolist()
+
+        # Prevent projections from going below 0 
+        future_vals = [max(0, v) for v in future_vals]
+
+        # 3. Prepare data for Plotly
+        hist_df = pd.DataFrame({"Year": years, "Value": historical_vals, "Trajectory": "Historical (Simulated)"})
+        fut_df = pd.DataFrame({"Year": future_years, "Value": future_vals, "Trajectory": "AI Forecast"})
+        plot_df = pd.concat([hist_df, fut_df])
+
+        # 4. Plot the graph
+        fig_forecast = px.line(
+            plot_df, 
+            x="Year", 
+            y="Value", 
+            color="Trajectory", 
+            markers=True,
+            title=f"{selected_district} - {forecast_indicator} 8-Year Trajectory",
+            color_discrete_map={"Historical (Simulated)": "#2563eb", "AI Forecast": "#ea580c"}
+        )
+        
+        # Make the forecast line dashed for visual distinction
+        fig_forecast.update_traces(line=dict(dash="dot"), selector=dict(name="AI Forecast"))
+        fig_forecast.update_layout(xaxis=dict(tickmode='linear', dtick=1)) # Force whole years on X-axis
+
+        st.plotly_chart(fig_forecast, use_container_width=True, key=f"forecast_chart_{selected_district}")
+
+        # 5. Generate Predictive Insight
+        proj_change = future_vals[-1] - current_val
+        is_ptr = "ptr" in forecast_indicator.lower()
+
+        # Logic: Increasing PTR is bad. Increasing learning/infra is good.
+        if proj_change > 0:
+            if is_ptr:
+                st.markdown(f'<div class="alert-critical"><b>⚠️ Critical Trajectory:</b> {forecast_indicator} is projected to worsen (increase) by {proj_change:.1f} units by 2027 without intervention.</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="alert-success"><b>📈 Positive Trajectory:</b> {forecast_indicator} is projected to sustainably improve by {proj_change:.1f} units by 2027.</div>', unsafe_allow_html=True)
+        else:
+            if is_ptr:
+                st.markdown(f'<div class="alert-success"><b>📈 Positive Trajectory:</b> {forecast_indicator} is projected to improve (decrease) by {abs(proj_change):.1f} units by 2027.</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="alert-warning"><b>⚠️ Decline Warning:</b> {forecast_indicator} is projected to steadily decline by {abs(proj_change):.1f} units by 2027 without intervention.</div>', unsafe_allow_html=True)
+
     # =========================================================
     # CORRELATION HEATMAP
     # =========================================================
